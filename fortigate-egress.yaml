@@ -1,0 +1,359 @@
+    AWSTemplateFormatVersion: "2010-09-09"
+
+    Description: "Network Services Template for a FortiGate VM64 Firewall"
+
+    Parameters: 
+      CidrBlockParameter:
+        Type: String
+        Default: 192.168.7.0/24
+      PublicSubnet1Parameter:
+        Type: String
+        Default: 192.168.7.0/26
+      PublicSubnet2Parameter:
+        Type: String
+        Default: 192.168.7.64/26
+      PrivateSubnet1Parameter:
+        Type: String
+        Default: 192.168.7.128/26
+      PrivateSubnet2Parameter:
+        Type: String
+        Default: 192.168.7.192/26
+      myKeyPair: 
+        Description: Amazon EC2 Key Pair
+        Type: "AWS::EC2::KeyPair::KeyName"
+      myBucket: 
+        Description: Amazon S3 Bucket where boot config is uploaded to
+        Type: String
+
+    Resources:
+      TransitGateway:
+        Type: "AWS::EC2::TransitGateway"
+        Properties:
+          AmazonSideAsn: 64512
+          AutoAcceptSharedAttachments: disable
+          DefaultRouteTableAssociation: disable
+          DefaultRouteTablePropagation: disable
+          Description: !Join [ -, [!Ref "AWS::StackName",global]]
+          DnsSupport: enable
+          Tags: 
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",global]]
+          VpnEcmpSupport: enable
+
+      TransitGatewayRouteTableEgress:
+        Type: "AWS::EC2::TransitGatewayRouteTable"
+        Properties:
+          Tags: 
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Egress]]
+          TransitGatewayId: !Ref TransitGateway
+
+      PubPrivateVPC:
+        Type: "AWS::EC2::VPC"
+        Properties:
+          CidrBlock:
+            Ref: CidrBlockParameter
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+
+      PublicSubnet1:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: PublicSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-1]]
+
+      PublicSubnet2:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: PublicSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-2]]
+     
+      PrivateSubnet1:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: PrivateSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-1]]
+     
+      PrivateSubnet2:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: PrivateSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2]]
+     
+      InternetGateway:
+        Type: "AWS::EC2::InternetGateway"
+        Properties:
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+            - Key: Network
+              Value: Public
+      
+      GatewayToInternet:
+        Type: "AWS::EC2::VPCGatewayAttachment"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          InternetGatewayId: !Ref InternetGateway
+
+      PublicRouteTable:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",publicRT]]
+
+      PrivateRouteTable:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",privateRT]]
+
+      PublicRoute:
+        Type: "AWS::EC2::Route"
+        DependsOn: GatewayToInternet
+        Properties:
+          RouteTableId: !Ref PublicRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          GatewayId: !Ref InternetGateway
+
+      PublicSubnet1RouteTableAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          RouteTableId: !Ref PublicRouteTable
+
+      PublicSubnet2RouteTableAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+          SubnetId: !Ref PublicSubnet2
+          RouteTableId: !Ref PublicRouteTable
+          
+      PrivateSubnet1RouteTableAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+          SubnetId: !Ref PrivateSubnet1
+          RouteTableId: !Ref PrivateRouteTable
+     
+      PrivateSubnet2RouteTableAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+          SubnetId: !Ref PrivateSubnet2
+          RouteTableId: !Ref PrivateRouteTable
+
+      EIP1:
+        Type: AWS::EC2::EIP
+        Properties:
+          Domain: vpc
+      AssociateEIP1:
+        Type: AWS::EC2::EIPAssociation
+        Properties:
+          AllocationId: !GetAtt EIP1.AllocationId
+          NetworkInterfaceId: !Ref ENI1
+
+      ENI1:
+        Type: AWS::EC2::NetworkInterface
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          Description: Interface for 
+          GroupSet: 
+          - !Ref SGOutside
+          SourceDestCheck: false
+          Tags:
+            -
+              Key: Network
+              Value: ENI1
+              Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",ENI1]]
+
+      ENI2:
+        Type: AWS::EC2::NetworkInterface
+        Properties:
+          SubnetId: !Ref PrivateSubnet1
+          Description: Interface for 
+          GroupSet: 
+          - !Ref SGInside
+          SourceDestCheck: false
+          Tags:
+            -
+              Key: Network
+              Value: ENI2
+              Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",ENI2]]
+
+      SGInside:
+        Type: "AWS::EC2::SecurityGroup"
+        DependsOn: PubPrivateVPC
+        Properties:
+          GroupDescription: Allow ICMP Only
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: icmp
+              FromPort: "-1"
+              ToPort: "-1"
+              CidrIp: 0.0.0.0/0
+
+      SGOutside:
+        Type: "AWS::EC2::SecurityGroup"
+        DependsOn: PubPrivateVPC
+        Properties:
+          GroupDescription: Allow VPNs into firewall
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: "22"
+              ToPort: "22"
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: icmp
+              FromPort: "-1"
+              ToPort: "-1"
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: 50
+              FromPort: "0"
+              ToPort: "0"
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: 51
+              FromPort: "0"
+              ToPort: "0"
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: "443"
+              ToPort: "443"
+              CidrIp: 0.0.0.0/0 
+            - IpProtocol: udp
+              FromPort: "500"
+              ToPort: "500"
+              CidrIp: 0.0.0.0/0 
+
+      BootfromS3Role:
+        Type: AWS::IAM::Role
+        Properties:
+          AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - 
+                Effect: Allow
+                Principal:
+                  Service:
+                    - "ec2.amazonaws.com"
+                Action:
+                  - "sts:AssumeRole"
+          Path: "/"
+
+      BootfromS3Policies:
+        Type: AWS::IAM::Policy
+        Properties:
+          PolicyName: "root"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - 
+                Effect: "Allow"
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - 'arn:aws:s3:::example-bucket/*'
+#                Resource: !Join
+#                  - ''
+#                  - - arn:aws:s3:::
+#                    - !Ref 'myBucket'
+#                    - /*
+          Roles:
+            - 
+              !Ref "BootfromS3Role"
+      BootfromS3InstanceProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties:
+          Path: /
+          Roles:
+            - !Ref "BootfromS3Role"
+      S3Endpoint:
+        Type: AWS::EC2::VPCEndpoint
+        Properties:
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Principal: '*'
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  - 'arn:aws:s3:::example-bucket/*'
+          RouteTableIds:
+            - !Ref PublicRouteTable
+          ServiceName: !Join 
+            - ''
+            - - com.amazonaws.
+              - !Ref 'AWS::Region'
+              - .s3
+          VpcId: !Ref PubPrivateVPC
+
+      MyInstance:
+        Type: "AWS::EC2::Instance"
+        Properties:
+          ImageId: ami-0aeda1bdca1b205bd
+          IamInstanceProfile: !Ref "BootfromS3InstanceProfile"
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces: 
+            - DeviceIndex: "0"
+              NetworkInterfaceId: !Ref ENI1
+            - DeviceIndex: "1"
+              NetworkInterfaceId: !Ref ENI2
+          InstanceType: c5.large
+          AvailabilityZone: eu-west-1a
+          UserData:
+            Fn::Base64:
+              !Sub |
+                {
+                  "bucket" : "example-bucket",
+                  "region" : "eu-west-1",
+                  "config" : "/fortigate.conf",
+                }
+#            Fn::Base64: !Join
+#              - ''
+#              - - {
+#                - bucket :
+#                - !Ref 'myBucket',
+#                - region :
+#                - !Ref 'AWS::Region',
+#                - config : /fortigate.conf,
+#                - }
+
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",FortiGate-VM64]]
+
+    Outputs:
+      MyInstancPrivateIp:
+        Value: !GetAtt MyInstance.PrivateIp
+      TransitGatewayOutput:
+        Value: !Ref TransitGateway
+      RouteTableID:
+        Value: !Ref PrivateRouteTable

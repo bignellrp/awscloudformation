@@ -9,7 +9,7 @@ https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html
 
 Clone the script into a tmp directory
 
-git clone https://github.com/libgit2/libgit2
+git clone https://github.com/bignellrp/awscloudformation.git
 
 and launch using the command:
 

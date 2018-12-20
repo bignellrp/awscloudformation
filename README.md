@@ -13,8 +13,4 @@ cd /tmp; git clone https://github.com/bignellrp/awscloudformation.git
 
 and launch using the command:
 
-aws cloudformation create-stack --stack-name mynewfirewallstack --capabilities CAPABILITY_IAM --template-body file:///tmp/fortigate-egress.yaml --parameters ParameterKey=myBucket,ParameterValue="example-bucket" ParameterKey=myKeyPair,ParameterValue="example-key"
-
-To upload a config to s3 use the following:
-
-aws s3 cp fortigate.conf s3://example-bucket/fortigate.conf
+aws cloudformation create-stack --stack-name stack-name --template-body file:///templates/fortigate-egress.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"

@@ -21,9 +21,6 @@
       myKeyPair: 
         Description: Amazon EC2 Key Pair
         Type: "AWS::EC2::KeyPair::KeyName"
-      myBucket: 
-        Description: Amazon S3 Bucket where boot config is uploaded to
-        Type: String
 
     Resources:
       TransitGateway:
@@ -49,7 +46,7 @@
           TransitGatewayId: !Ref TransitGateway
 
       PubPrivateVPC:
-        Type: "AWS::EC2::VPC"
+        Type: 'AWS::EC2::VPC'
         Properties:
           CidrBlock:
             Ref: CidrBlockParameter
@@ -58,7 +55,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName"]]
 
       PublicSubnet1:
-        Type: "AWS::EC2::Subnet"
+        Type: 'AWS::EC2::Subnet'
         Properties:
           VpcId: !Ref PubPrivateVPC
           AvailabilityZone: eu-west-1a
@@ -70,7 +67,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-1]]
 
       PublicSubnet2:
-        Type: "AWS::EC2::Subnet"
+        Type: 'AWS::EC2::Subnet'
         Properties:
           VpcId: !Ref PubPrivateVPC
           AvailabilityZone: eu-west-1b
@@ -82,7 +79,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-2]]
      
       PrivateSubnet1:
-        Type: "AWS::EC2::Subnet"
+        Type: 'AWS::EC2::Subnet'
         Properties:
           VpcId: !Ref PubPrivateVPC
           AvailabilityZone: eu-west-1a
@@ -94,7 +91,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-1]]
      
       PrivateSubnet2:
-        Type: "AWS::EC2::Subnet"
+        Type: 'AWS::EC2::Subnet'
         Properties:
           VpcId: !Ref PubPrivateVPC
           AvailabilityZone: eu-west-1b
@@ -106,7 +103,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2]]
      
       InternetGateway:
-        Type: "AWS::EC2::InternetGateway"
+        Type: 'AWS::EC2::InternetGateway'
         Properties:
           Tags:
             - Key: Name
@@ -115,13 +112,13 @@
               Value: Public
       
       GatewayToInternet:
-        Type: "AWS::EC2::VPCGatewayAttachment"
+        Type: 'AWS::EC2::VPCGatewayAttachment'
         Properties:
           VpcId: !Ref PubPrivateVPC
           InternetGatewayId: !Ref InternetGateway
 
       PublicRouteTable:
-        Type: "AWS::EC2::RouteTable"
+        Type: 'AWS::EC2::RouteTable'
         Properties:
           VpcId: !Ref PubPrivateVPC
           Tags:
@@ -129,7 +126,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",publicRT]]
 
       PrivateRouteTable:
-        Type: "AWS::EC2::RouteTable"
+        Type: 'AWS::EC2::RouteTable'
         Properties:
           VpcId: !Ref PubPrivateVPC
           Tags:
@@ -137,7 +134,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",privateRT]]
 
       PublicRoute:
-        Type: "AWS::EC2::Route"
+        Type: 'AWS::EC2::Route'
         DependsOn: GatewayToInternet
         Properties:
           RouteTableId: !Ref PublicRouteTable
@@ -145,25 +142,25 @@
           GatewayId: !Ref InternetGateway
 
       PublicSubnet1RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
         Properties:
           SubnetId: !Ref PublicSubnet1
           RouteTableId: !Ref PublicRouteTable
 
       PublicSubnet2RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
         Properties:
           SubnetId: !Ref PublicSubnet2
           RouteTableId: !Ref PublicRouteTable
           
       PrivateSubnet1RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
         Properties:
           SubnetId: !Ref PrivateSubnet1
           RouteTableId: !Ref PrivateRouteTable
      
       PrivateSubnet2RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
         Properties:
           SubnetId: !Ref PrivateSubnet2
           RouteTableId: !Ref PrivateRouteTable
@@ -172,6 +169,7 @@
         Type: AWS::EC2::EIP
         Properties:
           Domain: vpc
+
       AssociateEIP1:
         Type: AWS::EC2::EIPAssociation
         Properties:
@@ -184,7 +182,7 @@
           SubnetId: !Ref PublicSubnet1
           Description: Interface for 
           GroupSet: 
-          - !Ref SGOutside
+          - !Ref SGFirewall
           SourceDestCheck: false
           Tags:
             -
@@ -199,7 +197,7 @@
           SubnetId: !Ref PrivateSubnet1
           Description: Interface for 
           GroupSet: 
-          - !Ref SGInside
+          - !Ref SGPingOnly
           SourceDestCheck: false
           Tags:
             -
@@ -208,118 +206,58 @@
               Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",ENI2]]
 
-      SGInside:
-        Type: "AWS::EC2::SecurityGroup"
+      SGPingOnly:
+        Type: 'AWS::EC2::SecurityGroup'
         DependsOn: PubPrivateVPC
         Properties:
           GroupDescription: Allow ICMP Only
           VpcId: !Ref PubPrivateVPC
           SecurityGroupIngress:
             - IpProtocol: icmp
-              FromPort: "-1"
-              ToPort: "-1"
+              FromPort: '-1'
+              ToPort: '-1'
               CidrIp: 0.0.0.0/0
 
-      SGOutside:
-        Type: "AWS::EC2::SecurityGroup"
+      SGFirewall:
+        Type: 'AWS::EC2::SecurityGroup'
         DependsOn: PubPrivateVPC
         Properties:
           GroupDescription: Allow VPNs into firewall
           VpcId: !Ref PubPrivateVPC
           SecurityGroupIngress:
             - IpProtocol: tcp
-              FromPort: "22"
-              ToPort: "22"
+              FromPort: '22'
+              ToPort: '22'
               CidrIp: 0.0.0.0/0
             - IpProtocol: icmp
-              FromPort: "-1"
-              ToPort: "-1"
+              FromPort: '-1'
+              ToPort: '-1'
               CidrIp: 0.0.0.0/0
             - IpProtocol: 50
-              FromPort: "0"
-              ToPort: "0"
+              FromPort: '0'
+              ToPort: '0'
               CidrIp: 0.0.0.0/0
             - IpProtocol: 51
-              FromPort: "0"
-              ToPort: "0"
+              FromPort: '0'
+              ToPort: '0'
               CidrIp: 0.0.0.0/0
             - IpProtocol: tcp
-              FromPort: "443"
-              ToPort: "443"
+              FromPort: '443'
+              ToPort: '443'
               CidrIp: 0.0.0.0/0 
             - IpProtocol: udp
-              FromPort: "500"
-              ToPort: "500"
+              FromPort: '500'
+              ToPort: '500'
+              CidrIp: 0.0.0.0/0 
+            - IpProtocol: udp
+              FromPort: '4500'
+              ToPort: '4500'
               CidrIp: 0.0.0.0/0 
 
-      BootfromS3Role:
-        Type: AWS::IAM::Role
-        Properties:
-          AssumeRolePolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - 
-                Effect: Allow
-                Principal:
-                  Service:
-                    - "ec2.amazonaws.com"
-                Action:
-                  - "sts:AssumeRole"
-          Path: "/"
-
-      BootfromS3Policies:
-        Type: AWS::IAM::Policy
-        Properties:
-          PolicyName: "root"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - 
-                Effect: "Allow"
-                Action:
-                  - 's3:GetObject'
-                Resource:
-                  - 'arn:aws:s3:::example-bucket/*'
-#                Resource: !Join
-#                  - ''
-#                  - - arn:aws:s3:::
-#                    - !Ref 'myBucket'
-#                    - /*
-          Roles:
-            - 
-              !Ref "BootfromS3Role"
-      BootfromS3InstanceProfile:
-        Type: AWS::IAM::InstanceProfile
-        Properties:
-          Path: /
-          Roles:
-            - !Ref "BootfromS3Role"
-      S3Endpoint:
-        Type: AWS::EC2::VPCEndpoint
-        Properties:
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Principal: '*'
-                Action:
-                  - 's3:GetObject'
-                Resource:
-                  - 'arn:aws:s3:::example-bucket/*'
-          RouteTableIds:
-            - !Ref PublicRouteTable
-          ServiceName: !Join 
-            - ''
-            - - com.amazonaws.
-              - !Ref 'AWS::Region'
-              - .s3
-          VpcId: !Ref PubPrivateVPC
-
       MyInstance:
-        Type: "AWS::EC2::Instance"
+        Type: 'AWS::EC2::Instance'
         Properties:
           ImageId: ami-0aeda1bdca1b205bd
-          IamInstanceProfile: !Ref "BootfromS3InstanceProfile"
           KeyName: !Ref myKeyPair
           NetworkInterfaces: 
             - DeviceIndex: "0"
@@ -327,28 +265,75 @@
             - DeviceIndex: "1"
               NetworkInterfaceId: !Ref ENI2
           InstanceType: c5.large
+          BlockDeviceMappings:
+            # Mount Existing Device with changes to volume size and type
+            - DeviceName: "/dev/sda1"
+              Ebs:
+                # This is the Fortigate /root image. You don't need big disk size.
+                VolumeSize: "2"   # Default size: 2GB
+                VolumeType: "gp2" # Default type: standard
+            - DeviceName: "/dev/sdb"
+              Ebs:
+                # This is for data logging. If you need to keep large historical data
+                # you can increase the volume size.
+                VolumeSize: "30"  # Default size: 30GB
+                VolumeType: "gp2" # Default type: magnetic
           AvailabilityZone: eu-west-1a
           UserData:
             Fn::Base64:
               !Sub |
-                {
-                  "bucket" : "example-bucket",
-                  "region" : "eu-west-1",
-                  "config" : "/fortigate.conf",
-                }
-#            Fn::Base64: !Join
-#              - ''
-#              - - {
-#                - bucket :
-#                - !Ref 'myBucket',
-#                - region :
-#                - !Ref 'AWS::Region',
-#                - config : /fortigate.conf,
-#                - }
-
+                config system interface
+                  edit port1
+                    set mode dhcp
+                    set allowaccess ping https ssh fgfm
+                  next
+                  edit port2
+                    set mode dhcp
+                    set allowaccess ping
+                    set defaultgw disable
+                  next
+                end
+                config firewall policy
+                  edit 0
+                    set name "outgoing"
+                    set srcintf "port2"
+                    set dstintf "port1"
+                    set srcaddr "all"
+                    set dstaddr "all"
+                    set action accept
+                    set schedule "always"
+                    set service "ALL"
+                    set logtraffic disable
+                    set nat enable
+                  next
+                end
           Tags:
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",FortiGate-VM64]]
+
+      TransitGatewayAttachment:
+        Type: "AWS::EC2::TransitGatewayAttachment"
+        Properties:
+          SubnetIds:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",FirewallAttachment]]
+          TransitGatewayId: !Ref TransitGateway
+          VpcId: !Ref PubPrivateVPC
+
+      TransitGatewayRTAttachment:
+        Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+      TransitGatewayPropogation:
+        Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
 
     Outputs:
       MyInstancPrivateIp:

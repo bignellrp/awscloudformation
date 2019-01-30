@@ -37,7 +37,7 @@
               Value: !Join [ -, [!Ref "AWS::StackName",global]]
           VpnEcmpSupport: enable
 
-      TransitGatewayRouteTableEgress:
+      TransitGatewayRouteTable:
         Type: "AWS::EC2::TransitGatewayRouteTable"
         Properties:
           Tags: 

@@ -190,3 +190,9 @@
           Tags:
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",testmachine]]
+
+    Outputs:
+      InstancesPrivateIp:
+        Value: !GetAtt MyInstance.PrivateIp
+      VPNID:
+        Value: !Ref myVPNConnection

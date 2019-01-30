@@ -30,3 +30,5 @@ Just a plain vpc with a single route table.  Will build a vpn and an ec2 for tes
 Use "aws ec2 describe-vpn-connections" for grabbing the VPN connection info once built.
 
 e.g. aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=vpn-091cf676fe9816bd7" where the Value is taken from the cloudformation output.
+
+aws cloudformation describe-stacks --stack-name spoke-rbignell | grep Output

@@ -317,13 +317,14 @@
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",FortiGate-VM64]]
 
-      NatRoute:
-        Type: 'AWS::EC2::Route'
-        DependsOn: ENI2
-        Properties:
-          RouteTableId: !Ref PrivateRouteTable
-          DestinationCidrBlock: 0.0.0.0/0
-          GatewayId: !Ref ENI2
+## Commented as GatewayID cannot be an ENI: The gateway ID eni-054ddbc64c1165bb6 does not exist (Service: AmazonEC2 Status Code: 400 Error Code)
+#      NatRoute:
+#        Type: 'AWS::EC2::Route'
+#        DependsOn: ENI2
+#        Properties:
+#          RouteTableId: !Ref PrivateRouteTable
+#          DestinationCidrBlock: 0.0.0.0/0
+#          GatewayId: !Ref ENI2
 
       TransitGatewayAttachment:
         Type: "AWS::EC2::TransitGatewayAttachment"

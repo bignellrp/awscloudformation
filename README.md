@@ -55,3 +55,7 @@ Use "aws ec2 describe-vpn-connections" for grabbing the VPN connection info once
 e.g. aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=vpn-091cf676fe9816bd7" where the Value is taken from the cloudformation output.
 
 aws cloudformation describe-stacks --stack-name spoke-rbignell | grep Output
+
+or
+
+aws cloudformation describe-stacks --stack-name spoke-rbignell --query 'Stacks[0].Outputs[0].OutputValue'

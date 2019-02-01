@@ -44,7 +44,9 @@ aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks
 
 # Fortigate Egress Next steps
 
-To add to the script building of the spoke VPC plus an additional firewall for AZ resiliency including BGP failover and dynamic routing.
+The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW direclty which would bypasss the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
+
+Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
 # VPC - VPN - EC2
 

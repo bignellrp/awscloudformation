@@ -19,36 +19,7 @@ aws cloudformation create-stack --stack-name stack-name --template-body file:///
 
 Fortigate Egress is configured to build a single Fortigate VM for use with AWS Transit Gateway.  Currently this script requires manual addition of static routes that point at the private ENI. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
 
-This comes with two templates that currently need to be built hub first then spokes second.
-
-The fortigate-spoke.yaml will create two spokes and attach them to the same TGW route table for use with the Fortigate Egress.
-
-Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw.
-
-This must be done manually and can be done from the awscli once the stacks are complete.
-
-aws ec2 create-route --route-table-id $route-table-id --destination-cidr-block 0.0.0.0/0 --gateway-id $tgw-id
-
-The route-table-id and the gateway-id can be found using the following commands:
-
-Two commands for the hub stack to output $route-table-id and $tgw-id
-
-aws cloudformation describe-stacks --stack-name hub-stack --query 'Stacks[0].Outputs[1].OutputValue'
-aws cloudformation describe-stacks --stack-name hub-stack --query 'Stacks[0].Outputs[2].OutputValue'
-
-then two commands to output test1rtb and test2rtb
-
-aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue'
-aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue'
-
-
-# Fortigate Egress Next steps
-
-The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW direclty which would bypasss the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
-
-Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
-
-I'll also add a diagram for the fortgate-egress topology.
+See wiki for details: https://github.com/bignellrp/awscloudformation/wiki
 
 # VPC - VPN - EC2
 

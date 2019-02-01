@@ -21,11 +21,16 @@ aws cloudformation create-stack --stack-name stack-name --template-body file:///
 
 # Fortigate Egress with TGW
 
+https://github.com/bignellrp/awscloudformation/blob/master/fortigate-egress.yaml
+https://github.com/bignellrp/awscloudformation/blob/master/fortigate-spoke.yaml
+
 Fortigate Egress is configured to build a single Fortigate VM for use with AWS Transit Gateway.  Currently this script requires manual addition of static routes that point at the private ENI. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
 
 See wiki for details: https://github.com/bignellrp/awscloudformation/wiki
 
 # Plain VPC with Private VPN
+
+https://github.com/bignellrp/awscloudformation/blob/master/vpc-vpn-ec2.yaml
 
 Just a plain vpc with a single route table.  This includes a vpn for private connectivity and an ec2 for testing.
 

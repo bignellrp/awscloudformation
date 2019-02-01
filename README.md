@@ -48,6 +48,8 @@ The script fortigate-egress currently only builds a single firewall with static 
 
 Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
+I'll also add a diagram for the fortgate-egress topology.
+
 # VPC - VPN - EC2
 
 Just a plain vpc with a single route table.  Will build a vpn and an ec2 for testing.

@@ -19,15 +19,15 @@ and launch using the command:
 aws cloudformation create-stack --stack-name stack-name --template-body file:///tmp/awscloudformation/choose-a-template.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"
 ```
 
-# Fortigate Egress
+# Fortigate Egress with TGW
 
 Fortigate Egress is configured to build a single Fortigate VM for use with AWS Transit Gateway.  Currently this script requires manual addition of static routes that point at the private ENI. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
 
 See wiki for details: https://github.com/bignellrp/awscloudformation/wiki
 
-# VPC - VPN - EC2
+# Plain VPC with Private VPN
 
-Just a plain vpc with a single route table.  Will build a vpn and an ec2 for testing.
+Just a plain vpc with a single route table.  This includes a vpn for private connectivity and an ec2 for testing.
 
 Use "aws ec2 describe-vpn-connections" for grabbing the VPN connection info once built.
 
@@ -37,7 +37,7 @@ e.g.
 aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=vpn-091cf676fe9816bd7"
 ```
 
-where the Value is taken from the cloudformation output.
+where "Values" is taken from the cloudformation output.
 
 To get this information from the stack use one of these commands.
 

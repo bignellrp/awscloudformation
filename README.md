@@ -35,24 +35,26 @@ The route-table-id and the gateway-id can be found using the following commands:
 
 3 commands for the hub stack to output $route-table-id and $tgw-id
 
+***NOTE*** The query outputs the value with quotation marks which the create-route command doesnt like.  So i stripped them off with sed. It will be much easier when AWS build this into cloudformation directly.
+
 ```
-routetableid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[0].OutputValue'`
-eniid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[2].OutputValue'`
-tgwid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue'`
+routetableid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[0].OutputValue'`; routetableid=`sed "s/\"//g" <<<"$routetableid"`
+eniid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[2].OutputValue'`; eniid=`sed "s/\"//g" <<<"$eniid"`
+tgwid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue'`; tgwid=`sed "s/\"//g" <<<"$tgwid"`
 ```
 
 Apply to Hub with
 
 ```
-aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 192.168.0.0/16 --gateway-id $tgwid
 aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0.0.0/0 --network-interface-id $eniid
 ```
 
 then two commands to output test1rtb and test2rtb
 
 ```
-spoke1rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue'`
-spoke2rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue'`
+spoke1rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue'`; spoke1rtbid=`sed "s/\"//g" <<<"$spoke1rtbid"`
+spoke2rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue'`; spoke2rtbid=`sed "s/\"//g" <<<"$spoke2rtbid"`
 ```
 
 Apply to Spokes with

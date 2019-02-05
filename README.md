@@ -69,7 +69,7 @@ Unfortunately there is no native support for VPN creation so additional scriptin
 
 See wiki for details: https://github.com/bignellrp/awscloudformation/wiki
 
-# Plain VPC with Private VPN
+# Project 2: Plain VPC with Private VPN
 
 https://github.com/bignellrp/awscloudformation/blob/master/vpc-vpn-ec2.yaml
 

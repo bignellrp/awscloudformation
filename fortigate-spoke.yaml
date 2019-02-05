@@ -25,14 +25,20 @@
         Description: Amazon EC2 Key Pair
         Type: "AWS::EC2::KeyPair::KeyName"
         Default: myKey
-      TransitGateway:
-        Description: TGWID from other CF Template
+      ParentVPCStack:
+        Description: 'Stack name of parent VPC stack'
         Type: String
-        Default: tgw-008d58a0180991c3c
-      TransitGatewayRouteTableTest:
-        Description: TGWRTBID from other CF Template
-        Type: String
-        Default: tgw-rtb-01e4e28386dfc4a1b
+        Default: fortigate-egress
+#      TransitGateway:
+#        Description: TGWID from other CF Template
+#        Type: String
+### Grab this value below from aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[3].OutputValue'
+#        Default: tgw-0354d6e0aaf16192f
+#      TransitGatewayRouteTableTest:
+#        Description: TGWRTBID from other CF Template
+#        Type: String
+### Grab this value below from aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[2].OutputValue'
+#        Default: tgw-rtb-0f89c8356b0c9f8e0
      
 
 
@@ -175,20 +181,23 @@
           Tags:
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",Test1]]
-          TransitGatewayId: !Ref TransitGateway
+#          TransitGatewayId: !Ref TransitGateway
+          TransitGatewayId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGateway'}
           VpcId: !Ref Test1PubPrivateVPC
 
       TransitGatewayRTAttachmentTest1:
         Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
         Properties:
           TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest1
-          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+#          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
 
       TransitGatewayPropogationTest1:
         Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
         Properties:
           TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest1
-          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+#          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
 
 ## End of Test 1 Section
 
@@ -331,20 +340,23 @@
           Tags:
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",Test2]]
-          TransitGatewayId: !Ref TransitGateway
+#          TransitGatewayId: !Ref TransitGateway
+          TransitGatewayId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGateway'}
           VpcId: !Ref Test2PubPrivateVPC
 
       TransitGatewayRTAttachmentTest2:
         Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
         Properties:
           TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest2
-          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+#          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
 
       TransitGatewayPropogationTest2:
         Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
         Properties:
           TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest2
-          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+#          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTableTest
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
 
 ## End of Test 2 Section
 

@@ -303,7 +303,15 @@
                     set action accept
                     set schedule "always"
                     set service "ALL"
-                    set logtraffic disable
+                    set utm-status enable
+                    set logtraffic all
+                    set fsso disable
+                    set av-profile "default"
+                    set webfilter-profile "default"
+                    set dnsfilter-profile "default"
+                    set ips-sensor "all_default"
+                    set application-list "block-high-risk"
+                    set ssl-ssh-profile "certificate-inspection"
                     set nat enable
                   next
                 end
@@ -325,6 +333,14 @@
 #          RouteTableId: !Ref PrivateRouteTable
 #          DestinationCidrBlock: 0.0.0.0/0
 #          GatewayId: !Ref ENI2
+
+## Commented due to CF error: Route did not stabilize in expected time
+#      TGWRoute:
+#        Type: 'AWS::EC2::Route'
+#        Properties:
+#          RouteTableId: !Ref PrivateRouteTable
+#          DestinationCidrBlock: 192.168.0.0/16
+#          GatewayId: !Ref TransitGateway
 
       TransitGatewayAttachment:
         Type: "AWS::EC2::TransitGatewayAttachment"
@@ -350,10 +366,26 @@
           TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
           TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
 
+      TransitGatewayDefaultRoute:
+        Type: "AWS::EC2::TransitGatewayRoute"
+        Properties:
+          Blackhole: No
+          DestinationCidrBlock: 0.0.0.0/0
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
     Outputs:
-      MyInstancPrivateIp:
+      MyInstancePrivateIp:
         Value: !GetAtt MyInstance.PrivateIp
       TransitGatewayOutput:
         Value: !Ref TransitGateway
+        Export:
+          Name: !Sub '${AWS::StackName}-TransitGateway'
       RouteTableID:
         Value: !Ref PrivateRouteTable
+      TransitGatewayRTBOutput:
+        Value: !Ref TransitGatewayRouteTable
+        Export: 
+          Name: !Sub '${AWS::StackName}-TransitGatewayRouteTable'
+      InsideENI:
+        Value: !Ref ENI2

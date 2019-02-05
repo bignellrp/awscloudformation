@@ -23,6 +23,10 @@ Currently this script requires manual addition of static routes that point at th
 
 This comes with two templates that currently need to be built hub first then spokes second.
 
+```
+aws cloudformation create-stack --stack-name fortigate-spokes --template-body file:///tmp/awscloudformation/fortigate-spoke.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"
+```
+
 The fortigate-spoke.yaml will create two spokes and attach them to the same TGW route table for use with the Fortigate Egress.
 
 Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw.

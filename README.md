@@ -1,30 +1,71 @@
-# awscloudformation
-# Collection of Cloudformation Scripts for AWS
+# Introduction
 
-# To launch these scripts using the awscli
+Cloudformation is a great tool but can be tricky to remember the specific commands or quirks if you don't use it everyday.
 
-Install and configure aws cli using this page:
+Same as anything, use it or lose it.  Hopefully this set of commented scripts used along with the readme and wiki will either provide the starting block for someone new to cloudformation or a refresher for someone that doesnt use it all the time.
 
-https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html
+# Project 1:  Fortigate Egress using AWS Transit GW
 
-Clone the script into a tmp directory
+At Re:Invent 2018 AWS announced a replacement to the Transit VPC solution called Transit GW.  Its premise is to solve the issue where a customer has a requirement to "transit" traffic through a VPC to create a hub and spoke environment.  Transit routing is not natively supported by AWS so the original solution was to create an overlay network that allows this type of routing.  This was redesigned in 2018 to become TGW where this routing can be managed by AWS instead of managing your own routing devices.
+
+This project is to use TGW along with a virtual Fortigate firewall to enable a single egress to the internet from multiple spoke VPCs.
+
+The fortigate egress cf script is configured to build a single Fortigate VM for use with AWS Transit Gateway.
+
+
+![Fortigate Egress Diagram](https://user-images.githubusercontent.com/3774222/52119268-77a2c900-2610-11e9-92b3-25e86c7971c8.png)
 
 ```
-cd /tmp; git clone https://github.com/bignellrp/awscloudformation.git
+aws cloudformation create-stack --stack-name fortigate-egress --template-body file:///tmp/awscloudformation/fortigate-egress.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"
 ```
 
-and launch using the command:
+Currently this script requires manual addition of static routes that point at the private ENI. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
+
+This comes with two templates that currently need to be built hub first then spokes second.
+
+The fortigate-spoke.yaml will create two spokes and attach them to the same TGW route table for use with the Fortigate Egress.
+
+Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw.
+
+This must be done manually and can be done from the awscli once the stacks are complete.
+
+
+
+The route-table-id and the gateway-id can be found using the following commands:
+
+3 commands for the hub stack to output $route-table-id and $tgw-id
 
 ```
-aws cloudformation create-stack --stack-name stack-name --template-body file:///tmp/awscloudformation/choose-a-template.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"
+routetableid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[1].OutputValue'`
+eniid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[2].OutputValue'`
+tgwid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue'`
 ```
 
-# Fortigate Egress with TGW
+Apply to Hub with
 
-https://github.com/bignellrp/awscloudformation/blob/master/fortigate-egress.yaml
-https://github.com/bignellrp/awscloudformation/blob/master/fortigate-spoke.yaml
+```
+aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0.0.0/0 --network-interface-id $eniid
+```
 
-Fortigate Egress is configured to build a single Fortigate VM for use with AWS Transit Gateway.  Currently this script requires manual addition of static routes that point at the private ENI. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
+then two commands to output test1rtb and test2rtb
+
+```
+aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue'
+aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue'
+```
+
+Apply to Spokes with
+
+```
+aws ec2 create-route --route-table-id $route-table-id --destination-cidr-block 0.0.0.0/0 --gateway-id $tgw-id
+```
+
+# Fortigate Egress Next steps
+
+The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW direclty which would bypasss the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
+
+Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
 See wiki for details: https://github.com/bignellrp/awscloudformation/wiki
 

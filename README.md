@@ -74,9 +74,26 @@ The script fortigate-egress currently only builds a single firewall with static 
 
 Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
-There is a similar github project may have solved this issue using Lambda but i've not had a chance to test/review it yet.
+There is a similar github project that has solved the automation of the tgw routes with lambda.  For now the manual steps for adding the routes is fine considering its hopefully on the AWS roadmap to fix.
 
 https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
+
+A minor fix would also be to find a more elegant way of outputting a specific value rather than messing with the array.  Currently its pot luck getting the right number within the array at its not always in the order you expect.
+
+e.g.
+
+aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue
+
+doesnt always output the 5th value (0 being the first output in the list)
+
+aws cloudformation describe-stacks --stack-name fortigate-egress | grep eni | sed s/OutputValue//g | sed "s/\"//g" | sed "s/\://g"
+
+This could do it but what if there were multiple references to eni?
+
+This link has some interesting options but not sure which one is suitable:
+
+https://theserverlessway.com/aws/cli/query/
+
 
 # Project 2: Plain VPC with Private VPN
 

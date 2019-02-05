@@ -51,14 +51,15 @@ aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0
 then two commands to output test1rtb and test2rtb
 
 ```
-aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue'
-aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue'
+spoke1rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue'`
+spoke2rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue'`
 ```
 
 Apply to Spokes with
 
 ```
-aws ec2 create-route --route-table-id $route-table-id --destination-cidr-block 0.0.0.0/0 --gateway-id $tgw-id
+aws ec2 create-route --route-table-id $spoke1rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+aws ec2 create-route --route-table-id $spoke2rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
 ```
 
 # Fortigate Egress Next steps
@@ -67,7 +68,9 @@ The script fortigate-egress currently only builds a single firewall with static 
 
 Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
-See wiki for details: https://github.com/bignellrp/awscloudformation/wiki
+There is a similar github project may have solved this issue using Lambda but i've not had a chance to test/review it yet.
+
+https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
 
 # Project 2: Plain VPC with Private VPN
 
@@ -88,11 +91,6 @@ where "Values" is taken from the cloudformation output.
 To get this information from the stack use one of these commands.
 
 ```
-aws cloudformation describe-stacks --stack-name spoke-rbignell | grep Output
-```
-
-or
-
-```
-aws cloudformation describe-stacks --stack-name spoke-rbignell --query 'Stacks[0].Outputs[0].OutputValue'
+vpnid=`aws cloudformation describe-stacks --stack-name spoke-rbignell --query 'Stacks[0].Outputs[0].OutputValue'`
+aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid"
 ```

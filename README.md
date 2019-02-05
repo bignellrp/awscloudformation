@@ -36,7 +36,7 @@ The route-table-id and the gateway-id can be found using the following commands:
 3 commands for the hub stack to output $route-table-id and $tgw-id
 
 ```
-routetableid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[1].OutputValue'`
+routetableid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[0].OutputValue'`
 eniid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[2].OutputValue'`
 tgwid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue'`
 ```

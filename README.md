@@ -95,25 +95,29 @@ This link has some interesting options but not sure which one is suitable:
 https://theserverlessway.com/aws/cli/query/
 
 
-# Project 2: Plain VPC with Private VPN
+# Project 2: VPC with VPN connecting to single Fortigate
 
-https://github.com/bignellrp/awscloudformation/blob/master/vpc-vpn-ec2.yaml
+This project is to create a VPC with a VPN and use a bash script to build the VPN onto a Fortigate in a separate VPC.
 
-Just a plain vpc with a single route table.  This includes a vpn for private connectivity and an ec2 for testing.
 
-Use "aws ec2 describe-vpn-connections" for grabbing the VPN connection info once built.
 
-e.g. 
+The bash script uses "aws ec2 describe-vpn-connections" for grabbing the VPN connection info once built and along with output commands "aws cloudformation describe-stacks" from the CF template it can build and apply the config.
 
-```
-aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=vpn-091cf676fe9816bd7"
-```
-
-where "Values" is taken from the cloudformation output.
-
-To get this information from the stack use one of these commands.
+First create the Fortigate stack:
 
 ```
-vpnid=`aws cloudformation describe-stacks --stack-name spoke-rbignell --query 'Stacks[0].Outputs[0].OutputValue'`
-aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid"
+aws cloudformation create-stack --stack-name fortigate-vpn --template-body file:///tmp/awscloudformation/fortigate-vpn.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"
+```
+
+Once built create the VPC stack:
+
+```
+aws cloudformation create-stack --stack-name vpc-vpn --template-body file:///tmp/awscloudformation/vpc-vpn.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="example-key"
+```
+
+Finally run the bash script to apply the vpn config:
+
+```
+chmod 755 /tmp/awscloudformation/applyvpn.sh
+/tmp/awscloudformation/applyvpn.sh
 ```

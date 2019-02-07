@@ -1,0 +1,326 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+    Description: "Network Services Template for a FortiGate VM64 Firewall"
+
+    Parameters: 
+      CidrBlockParameter:
+        Type: String
+        Default: 192.168.7.0/24
+      PublicSubnet1Parameter:
+        Type: String
+        Default: 192.168.7.0/26
+      PublicSubnet2Parameter:
+        Type: String
+        Default: 192.168.7.64/26
+      PrivateSubnet1Parameter:
+        Type: String
+        Default: 192.168.7.128/26
+      PrivateSubnet2Parameter:
+        Type: String
+        Default: 192.168.7.192/26
+      myKeyPair: 
+        Description: Amazon EC2 Key Pair
+        Type: "AWS::EC2::KeyPair::KeyName"
+# Optional: Use a perameter to enter UserData. e.g ParameterKey=UserData,ParameterValue=$(base64 -w0 ~/userdata.sh)
+#      UserData:
+#        Description: Fortigate User Data in userdata.sh
+#        Type: String
+
+    Resources:
+      PubPrivateVPC:
+        Type: 'AWS::EC2::VPC'
+        Properties:
+          CidrBlock:
+            Ref: CidrBlockParameter
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+
+      PublicSubnet1:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: PublicSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-1]]
+
+      PublicSubnet2:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: PublicSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-2]]
+     
+      PrivateSubnet1:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: PrivateSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-1]]
+     
+      PrivateSubnet2:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: PrivateSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2]]
+     
+      InternetGateway:
+        Type: 'AWS::EC2::InternetGateway'
+        Properties:
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+            - Key: Network
+              Value: Public
+      
+      GatewayToInternet:
+        Type: 'AWS::EC2::VPCGatewayAttachment'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          InternetGatewayId: !Ref InternetGateway
+
+      PublicRouteTable:
+        Type: 'AWS::EC2::RouteTable'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",publicRT]]
+
+      PrivateRouteTable:
+        Type: 'AWS::EC2::RouteTable'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",privateRT]]
+
+      PublicRoute:
+        Type: 'AWS::EC2::Route'
+        DependsOn: GatewayToInternet
+        Properties:
+          RouteTableId: !Ref PublicRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          GatewayId: !Ref InternetGateway
+
+      PublicSubnet1RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          RouteTableId: !Ref PublicRouteTable
+
+      PublicSubnet2RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref PublicSubnet2
+          RouteTableId: !Ref PublicRouteTable
+          
+      PrivateSubnet1RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref PrivateSubnet1
+          RouteTableId: !Ref PrivateRouteTable
+     
+      PrivateSubnet2RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref PrivateSubnet2
+          RouteTableId: !Ref PrivateRouteTable
+
+      EIP1:
+        Type: AWS::EC2::EIP
+        Properties:
+          Domain: vpc
+
+      AssociateEIP1:
+        Type: AWS::EC2::EIPAssociation
+        Properties:
+          AllocationId: !GetAtt EIP1.AllocationId
+          NetworkInterfaceId: !Ref ENI1
+
+      ENI1:
+        Type: AWS::EC2::NetworkInterface
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          Description: Interface for 
+          GroupSet: 
+          - !Ref SGFirewall
+          SourceDestCheck: false
+          Tags:
+            -
+              Key: Network
+              Value: ENI1
+              Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",ENI1]]
+
+      ENI2:
+        Type: AWS::EC2::NetworkInterface
+        Properties:
+          SubnetId: !Ref PrivateSubnet1
+          Description: Interface for 
+          GroupSet: 
+          - !Ref SGPingOnly
+          SourceDestCheck: false
+          Tags:
+            -
+              Key: Network
+              Value: ENI2
+              Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",ENI2]]
+
+      SGPingOnly:
+        Type: 'AWS::EC2::SecurityGroup'
+        DependsOn: PubPrivateVPC
+        Properties:
+          GroupDescription: Allow ICMP Only
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: icmp
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+
+      SGFirewall:
+        Type: 'AWS::EC2::SecurityGroup'
+        DependsOn: PubPrivateVPC
+        Properties:
+          GroupDescription: Allow VPNs into firewall
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: '22'
+              ToPort: '22'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: icmp
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: 50
+              FromPort: '0'
+              ToPort: '0'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: 51
+              FromPort: '0'
+              ToPort: '0'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: '443'
+              ToPort: '443'
+              CidrIp: 0.0.0.0/0 
+            - IpProtocol: udp
+              FromPort: '500'
+              ToPort: '500'
+              CidrIp: 0.0.0.0/0 
+            - IpProtocol: udp
+              FromPort: '4500'
+              ToPort: '4500'
+              CidrIp: 0.0.0.0/0 
+
+      MyInstance:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+          ImageId: ami-0aeda1bdca1b205bd
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces: 
+            - DeviceIndex: "0"
+              NetworkInterfaceId: !Ref ENI1
+            - DeviceIndex: "1"
+              NetworkInterfaceId: !Ref ENI2
+          InstanceType: c5.large
+          BlockDeviceMappings:
+            # Mount Existing Device with changes to volume size and type
+            - DeviceName: "/dev/sda1"
+              Ebs:
+                # This is the Fortigate /root image. You don't need big disk size.
+                VolumeSize: "2"   # Default size: 2GB
+                VolumeType: "gp2" # Default type: standard
+            - DeviceName: "/dev/sdb"
+              Ebs:
+                # This is for data logging. If you need to keep large historical data
+                # you can increase the volume size.
+                VolumeSize: "30"  # Default size: 30GB
+                VolumeType: "gp2" # Default type: magnetic
+          AvailabilityZone: eu-west-1a
+# Optional: Use a perameter to enter UserData. e.g ParameterKey=UserData,ParameterValue=$(base64 -w0 ~/userdata.sh)
+          #UserData: !Ref UserData
+          UserData:
+            Fn::Base64:
+              !Sub |
+                config system interface
+                  edit port1
+                    set mode dhcp
+                    set allowaccess ping https ssh fgfm
+                  next
+                  edit port2
+                    set mode dhcp
+                    set allowaccess ping
+                    set defaultgw disable
+                  next
+                end
+                config firewall policy
+                  edit 0
+                    set name "outgoing"
+                    set srcintf "port2"
+                    set dstintf "port1"
+                    set srcaddr "all"
+                    set dstaddr "all"
+                    set action accept
+                    set schedule "always"
+                    set service "ALL"
+                    set utm-status enable
+                    set logtraffic all
+                    set fsso disable
+                    set av-profile "default"
+                    set webfilter-profile "default"
+                    set dnsfilter-profile "default"
+                    set ips-sensor "all_default"
+                    set application-list "block-high-risk"
+                    set ssl-ssh-profile "certificate-inspection"
+                    set nat enable
+                  next
+                end
+                config router static
+                  edit 0
+                    set dst 192.168.0.0 255.255.0.0
+                    set device "port2"
+                  next
+                end
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",FortiGate-VM64]]
+
+    Outputs:
+      MyInstanceOutsideIp:
+        Value: !GetAtt ENI1.PrimaryPrivateIpAddress
+      MyInstanceInsideIp:
+        Value: !GetAtt ENI2.PrimaryPrivateIpAddress
+      RouteTableID:
+        Value: !Ref PrivateRouteTable
+      InsideENI:
+        Value: !Ref ENI2
+      OutsideENI:
+        Value: !Ref ENI1
+      OutsideEIP:
+        Value: !Ref EIP1
+        Export: 
+          Name: !Sub '${AWS::StackName}-EIP'

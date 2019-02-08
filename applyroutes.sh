@@ -20,6 +20,13 @@ echo "
 Applying the routes. Check the output for errors.
 
 "
+
+aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 192.168.0.0/16 --gateway-id $tgwid
+aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0.0.0/0 --network-interface-id $eniid
+aws ec2 create-route --route-table-id $spoke1rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+aws ec2 create-route --route-table-id $spoke2rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+
+
 # Testing
 
 echo "

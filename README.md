@@ -42,21 +42,26 @@ chmod 755 $HOME/awscloudformation/applyroutes.sh
 $HOME/awscloudformation/applyroutes.sh
 ```
 
-Now login to test instance in VPC 1 and confirm you can ping the instance in VPC2
+Now login to test instance in VPC 1 and confirm you can ping the instance in VPC2. 
+Also test that both VPC1 and VPC2 can get to 8.8.8.8 through the FW.
 
 ```
 
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@54.194.37.33 ping 192.168.2.140
-
-Warning: Permanently added '54.194.37.33' (ECDSA) to the list of known hosts.
-PING 192.168.2.140 (192.168.2.140) 56(84) bytes of data.
-64 bytes from 192.168.2.140: icmp_seq=1 ttl=254 time=1.25 ms
-64 bytes from 192.168.2.140: icmp_seq=2 ttl=254 time=1.11 ms
-64 bytes from 192.168.2.140: icmp_seq=3 ttl=254 time=1.11 ms
-64 bytes from 192.168.2.140: icmp_seq=4 ttl=254 time=1.30 ms
-64 bytes from 192.168.2.140: icmp_seq=5 ttl=254 time=1.19 ms
-64 bytes from 192.168.2.140: icmp_seq=6 ttl=254 time=1.05 ms
-64 bytes from 192.168.2.140: icmp_seq=7 ttl=254 time=1.15 ms
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.242.221.234 ping 192.168.2.58
+PING 192.168.2.58 (192.168.2.58) 56(84) bytes of data.
+64 bytes from 192.168.2.58: icmp_seq=1 ttl=254 time=1.02 ms
+64 bytes from 192.168.2.58: icmp_seq=2 ttl=254 time=0.660 ms
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.242.221.234 ping 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=49 time=1.78 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=49 time=1.32 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=49 time=3.13 ms
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@52.19.69.166 ping 8.8.8.8
+Warning: Permanently added '52.19.69.166' (ECDSA) to the list of known hosts.
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=49 time=164 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=49 time=1.23 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=49 time=1.22 ms
 
 ```
 

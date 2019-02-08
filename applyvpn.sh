@@ -2,10 +2,11 @@
 
 
 # Fill the variables from CF output
+key=`aws cloudformation describe-stacks --stack-name fortigate-vpn --output text | awk '/myKeyPair/ {print $3}'`
 output01=`echo $HOME/fortigate-vpn_output`
-vpnid=`aws cloudformation describe-stacks --stack-name vpc-vpn --query 'Stacks[0].Outputs[1].OutputValue' | sed "s/\"//g"`
-instance=`aws cloudformation describe-stacks --stack-name vpc-vpn --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
-lgw=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
+vpnid=`aws cloudformation describe-stacks --stack-name vpc-vpn --output text | awk '/VPNID/ {print $3}'`
+instance=`aws cloudformation describe-stacks --stack-name vpc-vpn --output text | awk '/InstancesPublicIp/ {print $3}'`
+lgw=`aws cloudformation describe-stacks --stack-name fortigate-vpn --output text | awk '/MyInstanceOutsideIp/ {print $3}'`
 remip01=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==4'`
 remip02=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==8'`
 locip01=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==2'`
@@ -16,9 +17,8 @@ secret01=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Val
 secret02=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<pre_shared_key>)[^<]+" | awk 'NR==2'`
 localasn=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==1'`
 remoteasn=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==2'`
-host=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[1].OutputValue' | sed "s/\"//g"`
-port2=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[2].OutputValue' | sed "s/\"//g"`
-
+host=`aws cloudformation describe-stacks --stack-name fortigate-vpn --output text | awk '/OutsideEIP/ {print $4}'`
+port2=`aws cloudformation describe-stacks --stack-name fortigate-vpn --output text | awk '/MyInstanceInsideIp/ {print $3}'`
 
 # Echo the fortigate commands into a file
 
@@ -140,15 +140,14 @@ Now applying the commands...
 
 
 "
-ssh -T -i ~/.ssh/my-key.pem admin@$host < $output01
+ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$host < $output01
 echo "
 
 VPN Config added. Check output above in case of errors.
 
 Now login to test instance and confirm you can ping the inside IP of the firewall
 
-ssh -i ~/.ssh/my-key.pem ec2-user@$instance
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$instance
 ping $port2
-
 
 "

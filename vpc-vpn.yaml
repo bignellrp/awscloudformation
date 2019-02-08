@@ -1,27 +1,28 @@
-AWSTemplateFormatVersion: "2010-09-09"
+    AWSTemplateFormatVersion: "2010-09-09"
 
     Description: "Template for building a VPC with a VPN including an EC2"
 
     Parameters: 
       CidrBlockParameter:
         Type: String
-        Default: 192.168.0.0/16
-      PublicSubnet1Parameter:
-        Type: String
         Default: 192.168.1.0/24
-      PublicSubnet2Parameter:
-        Type: String
-        Default: 192.168.2.0/24
+# Commented for testing directly between vpc and fortigate
+#      PublicSubnet1Parameter:
+#        Type: String
+#        Default: 192.168.1.0/26
+#      PublicSubnet2Parameter:
+#        Type: String
+#        Default: 192.168.1.64/26
       PrivateSubnet1Parameter:
         Type: String
-        Default: 192.168.3.0/24
+        Default: 192.168.1.128/26
       PrivateSubnet2Parameter:
         Type: String
-        Default: 192.168.4.0/24
+        Default: 192.168.1.192/26
       myKeyPair: 
         Description: Amazon EC2 Key Pair
         Type: "AWS::EC2::KeyPair::KeyName"
-        Default: myKey
+        Default: my-key
 
     Resources:
       PubPrivateVPC:
@@ -33,29 +34,29 @@ AWSTemplateFormatVersion: "2010-09-09"
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName"]]
 
-      PublicSubnet1:
-        Type: 'AWS::EC2::Subnet'
-        Properties:
-          VpcId: !Ref PubPrivateVPC
-          AvailabilityZone: eu-west-1a
-          CidrBlock:
-            Ref: PublicSubnet1Parameter
-          MapPublicIpOnLaunch: false
-          Tags:
-            - Key: Name
-              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-1]]
+#      PublicSubnet1:
+#        Type: 'AWS::EC2::Subnet'
+#        Properties:
+#          VpcId: !Ref PubPrivateVPC
+#          AvailabilityZone: eu-west-1a
+#          CidrBlock:
+#            Ref: PublicSubnet1Parameter
+#          MapPublicIpOnLaunch: false
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-1]]
 
-      PublicSubnet2:
-        Type: 'AWS::EC2::Subnet'
-        Properties:
-          VpcId: !Ref PubPrivateVPC
-          AvailabilityZone: eu-west-1b
-          CidrBlock:
-            Ref: PublicSubnet2Parameter
-          MapPublicIpOnLaunch: false
-          Tags:
-            - Key: Name
-              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-2]]
+#      PublicSubnet2:
+#        Type: 'AWS::EC2::Subnet'
+#        Properties:
+#          VpcId: !Ref PubPrivateVPC
+#          AvailabilityZone: eu-west-1b
+#          CidrBlock:
+#            Ref: PublicSubnet2Parameter
+#          MapPublicIpOnLaunch: false
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-2]]
      
       PrivateSubnet1:
         Type: 'AWS::EC2::Subnet'
@@ -81,30 +82,28 @@ AWSTemplateFormatVersion: "2010-09-09"
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2]]
 
-# Commented IGW and Public Route for testing private only connectivity across the VPN.
+# Optional IGW and Public Route for testing private only connectivity across the VPN.
 
-#      InternetGateway:
-#        Type: 'AWS::EC2::InternetGateway'
-#        Properties:
-#          Tags:
-#            - Key: Name
-#              Value: !Join [ -, [!Ref "AWS::StackName"]]
-#            - Key: Network
-#              Value: Public
-      
-#      GatewayToInternet:
-#        Type: 'AWS::EC2::VPCGatewayAttachment'
-#        Properties:
-#          VpcId: !Ref PubPrivateVPC
-#          InternetGatewayId: !Ref InternetGateway
-
-      PublicRouteTable:
-        Type: 'AWS::EC2::RouteTable'
+      InternetGateway:
+        Type: 'AWS::EC2::InternetGateway'
         Properties:
-          VpcId: !Ref PubPrivateVPC
           Tags:
             - Key: Name
-              Value: !Join [ -, [!Ref "AWS::StackName",public]]
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+      
+      GatewayToInternet:
+        Type: 'AWS::EC2::VPCGatewayAttachment'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          InternetGatewayId: !Ref InternetGateway
+
+#      PublicRouteTable:
+#        Type: 'AWS::EC2::RouteTable'
+#        Properties:
+#          VpcId: !Ref PubPrivateVPC
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",public]]
 
       PrivateRouteTable:
         Type: 'AWS::EC2::RouteTable'
@@ -114,25 +113,27 @@ AWSTemplateFormatVersion: "2010-09-09"
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",private]]
 
-#      PublicRoute:
-#        Type: 'AWS::EC2::Route'
-#        DependsOn: GatewayToInternet
-#        Properties:
+      PublicRoute:
+        Type: 'AWS::EC2::Route'
+        DependsOn: GatewayToInternet
+        Properties:
+# Commented Public route table for testing with a single rtb
 #          RouteTableId: !Ref PublicRouteTable
-#          DestinationCidrBlock: 0.0.0.0/0
-#          GatewayId: !Ref InternetGateway
+          RouteTableId: !Ref PrivateRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          GatewayId: !Ref InternetGateway
           
-      PublicSubnet1RouteTableAssociation:
-        Type: 'AWS::EC2::SubnetRouteTableAssociation'
-        Properties:
-          SubnetId: !Ref PublicSubnet1
-          RouteTableId: !Ref PublicRouteTable
+#      PublicSubnet1RouteTableAssociation:
+#        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+#        Properties:
+#          SubnetId: !Ref PublicSubnet1
+#          RouteTableId: !Ref PublicRouteTable
      
-      PublicSubnet2RouteTableAssociation:
-        Type: 'AWS::EC2::SubnetRouteTableAssociation'
-        Properties:
-          SubnetId: !Ref PublicSubnet2
-          RouteTableId: !Ref PublicRouteTable
+#      PublicSubnet2RouteTableAssociation:
+#        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+#        Properties:
+#          SubnetId: !Ref PublicSubnet2
+#          RouteTableId: !Ref PublicRouteTable
 
       PrivateSubnet1RouteTableAssociation:
         Type: 'AWS::EC2::SubnetRouteTableAssociation'
@@ -185,15 +186,13 @@ AWSTemplateFormatVersion: "2010-09-09"
           DestinationCidrBlock: 172.16.0.0/12
           GatewayId: !Ref VirtualPrivateGateway
 
-# Commented 192 route for testing CIDR as /16
-
-#      PrivateRoute192:
-#        Type: 'AWS::EC2::Route'
-#        DependsOn: AttachVpnGateway
-#        Properties:
-#          RouteTableId: !Ref PrivateRouteTable
-#          DestinationCidrBlock: 192.168.0.0/16
-#          GatewayId: !Ref VirtualPrivateGateway 
+      PrivateRoute192:
+        Type: 'AWS::EC2::Route'
+        DependsOn: AttachVpnGateway
+        Properties:
+          RouteTableId: !Ref PrivateRouteTable
+          DestinationCidrBlock: 192.168.0.0/16
+          GatewayId: !Ref VirtualPrivateGateway 
           
       PrivateRoute10:
         Type: 'AWS::EC2::Route'
@@ -203,52 +202,50 @@ AWSTemplateFormatVersion: "2010-09-09"
           DestinationCidrBlock: 10.0.0.0/8
           GatewayId: !Ref VirtualPrivateGateway
 
-# Commented SG and Instance for quick testing of the VPN
-
-#      SGPing:
-#        Type: 'AWS::EC2::SecurityGroup'
-#        DependsOn: PubPrivateVPC
-#        Properties:
-#          GroupDescription: Allow SSH ICMP and IPERF from TP Networks
-#          VpcId: !Ref PubPrivateVPC
-#          SecurityGroupIngress:
-#            - IpProtocol: tcp
-#              FromPort: '22'
-#              ToPort: '22'
-#              CidrIp: 0.0.0.0/0
-#            - IpProtocol: icmp
-#              FromPort: '-1'
-#              ToPort: '-1'
-#              CidrIp: 0.0.0.0/0
-#            - IpProtocol: tcp
-#              FromPort: '5201'
-#              ToPort: '5201'
-#              CidrIp: 0.0.0.0/0
+      SGPing:
+        Type: 'AWS::EC2::SecurityGroup'
+        DependsOn: PubPrivateVPC
+        Properties:
+          GroupDescription: Allow SSH ICMP and IPERF from TP Networks
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: '22'
+              ToPort: '22'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: icmp
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: '5201'
+              ToPort: '5201'
+              CidrIp: 0.0.0.0/0
               
-#      MyInstance:
-#        Type: 'AWS::EC2::Instance'
-#        Properties:
-#          ImageId: ami-ca0135b3
-#          KeyName: !Ref myKeyPair
-#          NetworkInterfaces: 
-#            - AssociatePublicIpAddress: "true"
-#              DeviceIndex: "0"
-#              GroupSet: 
-#                - Ref: "SGPing"
-#              SubnetId: 
-#                Ref: "PrivateSubnet1"
-#          InstanceType: t2.micro
-#          AvailabilityZone: eu-west-1a
-#          UserData:
-#            Fn::Base64: !Sub |
-#              #!/bin/bash
-#              yum --enablerepo=epel install -y iperf3
-#          Tags:
-#            - Key: Name
-#              Value: !Join [ -, [!Ref "AWS::StackName",testmachine]]
+      MyInstance:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+          ImageId: ami-ca0135b3
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces: 
+            - AssociatePublicIpAddress: "true"
+              DeviceIndex: "0"
+              GroupSet: 
+                - Ref: "SGPing"
+              SubnetId: 
+                Ref: "PrivateSubnet1"
+          InstanceType: t2.micro
+          AvailabilityZone: eu-west-1a
+          UserData:
+            Fn::Base64: !Sub |
+              #!/bin/bash
+              yum --enablerepo=epel install -y iperf3
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",testmachine]]
 
     Outputs:
-#      InstancesPrivateIp:
-#        Value: !GetAtt MyInstance.PrivateIp
+      InstancesPublicIp:
+        Value: !GetAtt MyInstance.PublicIp
       VPNID:
         Value: !Ref myVPNConnection

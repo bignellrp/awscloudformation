@@ -128,3 +128,20 @@ Finally run the bash script to apply the vpn config:
 chmod 755 $HOME/awscloudformation/applyvpn.sh
 $HOME/awscloudformation/applyvpn.sh
 ```
+
+Now login to test instance and confirm you can ping the inside IP of the firewall
+
+ssh -i ~/.ssh/my-key.pem ec2-user@63.32.104.62
+ping 192.168.2.150
+
+[ec2-user@ip-192-168-1-151 ~]$ ping 192.168.2.150
+PING 192.168.2.150 (192.168.2.150) 56(84) bytes of data.
+64 bytes from 192.168.2.150: icmp_seq=1 ttl=254 time=1.40 ms
+64 bytes from 192.168.2.150: icmp_seq=2 ttl=254 time=1.24 ms
+64 bytes from 192.168.2.150: icmp_seq=3 ttl=254 time=1.05 ms
+64 bytes from 192.168.2.150: icmp_seq=4 ttl=254 time=1.04 ms
+64 bytes from 192.168.2.150: icmp_seq=5 ttl=254 time=1.00 ms
+^C
+--- 192.168.2.150 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4005ms
+rtt min/avg/max/mdev = 1.000/1.150/1.406/0.156 ms

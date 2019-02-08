@@ -37,70 +37,41 @@ aws cloudformation create-stack --stack-name fortigate-spokes --template-body fi
 
 The fortigate-spoke.yaml will create two spokes and attach them to the same TGW route table for use with the Fortigate Egress.
 
-Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw.
-
-This must be done manually and can be done from the awscli once the stacks are complete.
-
-
-
-The route-table-id and the gateway-id can be found using the following commands:
-
-3 commands for the hub stack to output $route-table-id and $tgw-id
-
-***NOTE*** The query outputs the value with quotation marks which the create-route command doesnt like.  So i stripped them off with sed. It will be much easier when AWS build this into cloudformation directly.
+Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw. This can be done using bash by running the following:
 
 ```
-routetableid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
-eniid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[2].OutputValue' | sed "s/\"//g"`
-tgwid=`aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue' | sed "s/\"//g"`
+chmod 755 $HOME/awscloudformation/applyroutes.sh
+$HOME/awscloudformation/applyroutes.sh
 ```
 
-Apply to Hub with
+Now login to test instance in VPC 1 and confirm you can ping the instance in VPC2
 
 ```
-aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 192.168.0.0/16 --gateway-id $tgwid
-aws ec2 create-route --route-table-id $routetableid --destination-cidr-block 0.0.0.0/0 --network-interface-id $eniid
+
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@54.194.37.33 ping 192.168.2.140
+
+Warning: Permanently added '54.194.37.33' (ECDSA) to the list of known hosts.
+PING 192.168.2.140 (192.168.2.140) 56(84) bytes of data.
+64 bytes from 192.168.2.140: icmp_seq=1 ttl=254 time=1.25 ms
+64 bytes from 192.168.2.140: icmp_seq=2 ttl=254 time=1.11 ms
+64 bytes from 192.168.2.140: icmp_seq=3 ttl=254 time=1.11 ms
+64 bytes from 192.168.2.140: icmp_seq=4 ttl=254 time=1.30 ms
+64 bytes from 192.168.2.140: icmp_seq=5 ttl=254 time=1.19 ms
+64 bytes from 192.168.2.140: icmp_seq=6 ttl=254 time=1.05 ms
+64 bytes from 192.168.2.140: icmp_seq=7 ttl=254 time=1.15 ms
+
 ```
 
-then two commands to output test1rtb and test2rtb
-
-```
-spoke1rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[3].OutputValue' | sed "s/\"//g"`
-spoke2rtbid=`aws cloudformation describe-stacks --stack-name fortigate-spokes --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
-```
-
-Apply to Spokes with
-
-```
-aws ec2 create-route --route-table-id $spoke1rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
-aws ec2 create-route --route-table-id $spoke2rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
-```
 
 # Fortigate Egress Next steps
 
-The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW direclty which would bypasss the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
+The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW directly which would bypasss the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
 
 Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
 There is a similar github project that has solved the automation of the tgw routes with lambda.  For now the manual steps for adding the routes is fine considering its hopefully on the AWS roadmap to fix.
 
 https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
-
-A minor fix would also be to find a more elegant way of outputting a specific value rather than messing with the array.  Currently its pot luck getting the right number within the array at its not always in the order you expect.
-
-e.g.
-
-aws cloudformation describe-stacks --stack-name fortigate-egress --query 'Stacks[0].Outputs[4].OutputValue
-
-doesnt always output the 5th value (0 being the first output in the list)
-
-aws cloudformation describe-stacks --stack-name fortigate-egress | grep eni | sed s/OutputValue//g | sed "s/\"//g" | sed "s/\://g"
-
-This could do it but what if there were multiple references to eni?
-
-This link has some interesting options but not sure which one is suitable:
-
-https://theserverlessway.com/aws/cli/query/
 
 
 # Project 2: VPC with VPN connecting to single Fortigate
@@ -134,19 +105,16 @@ Now login to test instance and confirm you can ping the inside IP of the firewal
 
 ```
 
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@63.32.104.62
-ping 192.168.2.150
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@54.194.37.33 ping 192.168.2.140
 
-[ec2-user@ip-192-168-1-151 ~]$ ping 192.168.2.150
-PING 192.168.2.150 (192.168.2.150) 56(84) bytes of data.
-64 bytes from 192.168.2.150: icmp_seq=1 ttl=254 time=1.40 ms
-64 bytes from 192.168.2.150: icmp_seq=2 ttl=254 time=1.24 ms
-64 bytes from 192.168.2.150: icmp_seq=3 ttl=254 time=1.05 ms
-64 bytes from 192.168.2.150: icmp_seq=4 ttl=254 time=1.04 ms
-64 bytes from 192.168.2.150: icmp_seq=5 ttl=254 time=1.00 ms
-^C
---- 192.168.2.150 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 4005ms
-rtt min/avg/max/mdev = 1.000/1.150/1.406/0.156 ms
+Warning: Permanently added '54.194.37.33' (ECDSA) to the list of known hosts.
+PING 192.168.2.140 (192.168.2.140) 56(84) bytes of data.
+64 bytes from 192.168.2.140: icmp_seq=1 ttl=254 time=1.25 ms
+64 bytes from 192.168.2.140: icmp_seq=2 ttl=254 time=1.11 ms
+64 bytes from 192.168.2.140: icmp_seq=3 ttl=254 time=1.11 ms
+64 bytes from 192.168.2.140: icmp_seq=4 ttl=254 time=1.30 ms
+64 bytes from 192.168.2.140: icmp_seq=5 ttl=254 time=1.19 ms
+64 bytes from 192.168.2.140: icmp_seq=6 ttl=254 time=1.05 ms
+64 bytes from 192.168.2.140: icmp_seq=7 ttl=254 time=1.15 ms
 
 ```

@@ -134,7 +134,7 @@ Now login to test instance and confirm you can ping the inside IP of the firewal
 
 ```
 
-ssh -i ~/.ssh/my-key.pem ec2-user@63.32.104.62
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@63.32.104.62
 ping 192.168.2.150
 
 [ec2-user@ip-192-168-1-151 ~]$ ping 192.168.2.150

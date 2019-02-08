@@ -3,8 +3,9 @@
 
 # Fill the variables from CF output
 output01=`echo $HOME/fortigate-vpn_output`
-vpnid=`aws cloudformation describe-stacks --stack-name vpc-vpn --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
-lgw=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[2].OutputValue' | sed "s/\"//g"`
+vpnid=`aws cloudformation describe-stacks --stack-name vpc-vpn --query 'Stacks[0].Outputs[1].OutputValue' | sed "s/\"//g"`
+instance=`aws cloudformation describe-stacks --stack-name vpc-vpn --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
+lgw=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[0].OutputValue' | sed "s/\"//g"`
 remip01=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==4'`
 remip02=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==8'`
 locip01=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==2'`
@@ -16,6 +17,7 @@ secret02=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Val
 localasn=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==1'`
 remoteasn=`aws ec2 describe-vpn-connections --filters "Name=vpn-connection-id,Values=$vpnid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==2'`
 host=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[1].OutputValue' | sed "s/\"//g"`
+port2=`aws cloudformation describe-stacks --stack-name fortigate-vpn --query 'Stacks[0].Outputs[2].OutputValue' | sed "s/\"//g"`
 
 
 # Echo the fortigate commands into a file
@@ -87,8 +89,8 @@ config system zone
     next
 end
 config router bgp
-  set as $localasn
-  set router-id $lgw
+    set as $localasn
+    set router-id $lgw
     config neighbor
         edit "$remip01"
             set description "vpn_0"
@@ -97,6 +99,11 @@ config router bgp
         edit "$remip02"
             set description "vpn_1"
             set remote-as $remoteasn
+        next
+    end
+    config network
+        edit 1
+            set prefix 192.168.0.0 255.255.0.0
         next
     end
 end
@@ -133,10 +140,15 @@ Now applying the commands...
 
 
 "
-ssh -T -i ~/.ssh/networks-test.pem admin@$host < $output01
+ssh -T -i ~/.ssh/my-key.pem admin@$host < $output01
 echo "
 
 VPN Config added. Check output above in case of errors.
+
+Now login to test instance and confirm you can ping the inside IP of the firewall
+
+ssh -i ~/.ssh/my-key.pem ec2-user@$instance
+ping $port2
 
 
 "

@@ -20,7 +20,7 @@ This project is to use TGW along with a virtual Fortigate firewall to enable a s
 The fortigate egress cf script is configured to build a single Fortigate VM for use with AWS Transit Gateway.
 
 
-![Fortigate Egress Diagram](https://user-images.githubusercontent.com/3774222/52119268-77a2c900-2610-11e9-92b3-25e86c7971c8.png)
+![Fortigate Egress Diagram](https://github.com/bignellrp/awscloudformation/blob/master/Fortigate-Egress.png)
 
 
 ```

@@ -1,30 +1,30 @@
-AWSTemplateFormatVersion: "2010-09-09"
+    AWSTemplateFormatVersion: "2010-09-09"
 
     Description: "Network Services Template for a FortiGate VM64 Firewall"
 
     Parameters: 
       CidrBlockParameter:
         Type: String
-        Default: 192.168.7.0/24
+        Default: 192.168.2.0/24
       PublicSubnet1Parameter:
         Type: String
-        Default: 192.168.7.0/26
+        Default: 192.168.2.0/26
       PublicSubnet2Parameter:
         Type: String
-        Default: 192.168.7.64/26
+        Default: 192.168.2.64/26
       PrivateSubnet1Parameter:
         Type: String
-        Default: 192.168.7.128/26
+        Default: 192.168.2.128/26
       PrivateSubnet2Parameter:
         Type: String
-        Default: 192.168.7.192/26
+        Default: 192.168.2.192/26
       myKeyPair: 
         Description: Amazon EC2 Key Pair
         Type: "AWS::EC2::KeyPair::KeyName"
-# Optional: Use a perameter to enter UserData. e.g ParameterKey=UserData,ParameterValue=$(base64 -w0 ~/userdata.sh)
-#      UserData:
-#        Description: Fortigate User Data in userdata.sh
-#        Type: String
+      # Optional: Use a perameter to enter UserData. e.g ParameterKey=UserData,ParameterValue=$(base64 -w0 ~/userdata.sh)
+      #      UserData:
+      #        Description: Fortigate User Data in userdata.sh
+      #        Type: String
 
     Resources:
       PubPrivateVPC:

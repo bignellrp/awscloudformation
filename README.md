@@ -17,25 +17,23 @@ At Re:Invent 2018 AWS announced a replacement to the Transit VPC solution called
 
 This project is to use TGW along with a virtual Fortigate firewall to enable a single egress to the internet from multiple spoke VPCs.
 
-The fortigate egress cf script is configured to build a single Fortigate VM for use with AWS Transit Gateway.
+The fortigate egress cf script is configured to build a single Fortigate VM for use with AWS Transit Gateway. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
 
 
 ![Fortigate Egress Diagram](https://github.com/bignellrp/awscloudformation/blob/master/Fortigate-Egress.png)
 
 
+First build the fortigate egress vpc.  We can refer to this as the hub.
+
 ```
 aws cloudformation create-stack --stack-name fortigate-egress --template-body file:///$HOME/awscloudformation/fortigate-egress.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
 ```
 
-Currently this script requires manual addition of static routes that point at the private ENI. A default route in a new VPC connected to the same TGW will allow private instances to nat outbound via a central shared firewall.
-
-This comes with two templates that currently need to be built hub first then spokes second.
+Once the hub is built then build the spokes with this command:
 
 ```
 aws cloudformation create-stack --stack-name fortigate-spokes --template-body file:///$HOME/awscloudformation/fortigate-spoke.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
 ```
-
-The fortigate-spoke.yaml will create two spokes and attach them to the same TGW route table for use with the Fortigate Egress.
 
 Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw. This can be done using bash by running the following:
 

@@ -22,6 +22,7 @@ The fortigate egress cf script is configured to build a single Fortigate VM for 
 
 ![Fortigate Egress Diagram](https://user-images.githubusercontent.com/3774222/52119268-77a2c900-2610-11e9-92b3-25e86c7971c8.png)
 
+
 ```
 aws cloudformation create-stack --stack-name fortigate-egress --template-body file:///$HOME/awscloudformation/fortigate-egress.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
 ```
@@ -106,7 +107,7 @@ https://theserverlessway.com/aws/cli/query/
 
 This project is to create a VPC with a VPN and use a bash script to build the VPN onto a Fortigate in a separate VPC.
 
-
+![Fortigate VPN Diagram](https://github.com/bignellrp/awscloudformation/blob/master/Fortigate-VPN.png)
 
 The bash script uses "aws ec2 describe-vpn-connections" for grabbing the VPN connection info once built and along with output commands "aws cloudformation describe-stacks" from the CF template it can build and apply the config.
 

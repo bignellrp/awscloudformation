@@ -76,6 +76,8 @@ There is a similar github project that has solved the automation of the tgw rout
 
 https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
 
+Minor change could be to update the parameters to include the public source IP as this is hardcoded to only work from 1 IP.
+
 
 # Project 2: VPC with VPN connecting to single Fortigate
 

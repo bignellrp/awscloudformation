@@ -365,6 +365,10 @@
         Value: !GetAtt Test1MyInstance.PrivateIp
       Test2InstancesPrivateIp:
         Value: !GetAtt Test2MyInstance.PrivateIp
+      Test1InstancesPublicIp:
+        Value: !GetAtt Test1MyInstance.PublicIp
+      Test2InstancesPublicIp:
+        Value: !GetAtt Test2MyInstance.PublicIp
 ## Commented as TGW will be built as part of separate CF template
 #      TransitGatewayOutput:
 #        Value: !Ref TransitGateway

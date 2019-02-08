@@ -131,6 +131,8 @@ $HOME/awscloudformation/applyvpn.sh
 
 Now login to test instance and confirm you can ping the inside IP of the firewall
 
+```
+
 ssh -i ~/.ssh/my-key.pem ec2-user@63.32.104.62
 ping 192.168.2.150
 
@@ -145,3 +147,5 @@ PING 192.168.2.150 (192.168.2.150) 56(84) bytes of data.
 --- 192.168.2.150 ping statistics ---
 5 packets transmitted, 5 received, 0% packet loss, time 4005ms
 rtt min/avg/max/mdev = 1.000/1.150/1.406/0.156 ms
+
+```

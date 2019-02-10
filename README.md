@@ -29,10 +29,11 @@ First build the fortigate egress vpc.  We can refer to this as the hub.
 aws cloudformation create-stack --stack-name fortigate-egress --template-body file:///$HOME/awscloudformation/fortigate-egress.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
 ```
 
-Once the hub is built then build the spokes with this command:
+Once the hub is built then build the spokes with this command (you can edit wanip manually if required):
 
 ```
-aws cloudformation create-stack --stack-name fortigate-spokes --template-body file:///$HOME/awscloudformation/fortigate-spoke.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
+wanip=`curl ifconfig.me`
+aws cloudformation create-stack --stack-name fortigate-spokes --template-body file:///$HOME/awscloudformation/fortigate-spoke.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key" ParameterKey=WanIP,ParameterValue="$wanip"
 ```
 
 Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw. This can be done using bash by running the following:
@@ -75,8 +76,6 @@ Unfortunately there is no native support for VPN creation so additional scriptin
 There is a similar github project that has solved the automation of the tgw routes with lambda.  For now the manual steps for adding the routes is fine considering its hopefully on the AWS roadmap to fix.
 
 https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
-
-Minor change could be to update the parameters to include the public source IP as this is hardcoded to only work from 1 IP.
 
 
 # Project 2: VPC with VPN connecting to single Fortigate

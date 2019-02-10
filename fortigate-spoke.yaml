@@ -109,7 +109,7 @@
         Properties:
           RouteTableId: !Ref Test1PrivateRouteTable
           # Currently untested
-          DestinationCidrBlock: !Ref "WanIP"/32
+          DestinationCidrBlock: !Join [ /, [!Ref "WanIP",32]]
           GatewayId: !Ref Test1InternetGateway
 
 ## Commented due to CF error: Route did not stabilize in expected time
@@ -143,7 +143,7 @@
               FromPort: '22'
               ToPort: '22'
               #Currently untested. May fail as not joined.
-              CidrIp: !Ref "WanIP"/32
+              CidrIp: !Join [ /, [!Ref "WanIP",32]]
             - IpProtocol: icmp
               FromPort: '-1'
               ToPort: '-1'
@@ -269,8 +269,7 @@
         DependsOn: Test2GatewayToInternet
         Properties:
           RouteTableId: !Ref Test2PrivateRouteTable
-          # Currently untested
-          DestinationCidrBlock: !Ref "WanIP"/32
+          DestinationCidrBlock: !Join [ /, [!Ref "WanIP",32]]
           GatewayId: !Ref Test2InternetGateway
           
       Test2PrivateSubnet1RouteTableAssociation:
@@ -295,7 +294,7 @@
             - IpProtocol: tcp
               FromPort: '22'
               ToPort: '22'
-              CidrIp: 0.0.0.0/0
+              CidrIp: !Join [ /, [!Ref "WanIP",32]]
             - IpProtocol: icmp
               FromPort: '-1'
               ToPort: '-1'

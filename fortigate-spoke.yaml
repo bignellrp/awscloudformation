@@ -25,6 +25,9 @@
         Description: Amazon EC2 Key Pair
         Type: "AWS::EC2::KeyPair::KeyName"
         Default: myKey
+      WanIP:
+        Description: My WAN IP
+        Type: String
       ParentVPCStack:
         Description: 'Stack name of parent VPC stack'
         Type: String
@@ -105,7 +108,8 @@
         DependsOn: Test1GatewayToInternet
         Properties:
           RouteTableId: !Ref Test1PrivateRouteTable
-          DestinationCidrBlock: 195.60.27.205/32
+          # Currently untested
+          DestinationCidrBlock: !Ref "WanIP"/32
           GatewayId: !Ref Test1InternetGateway
 
 ## Commented due to CF error: Route did not stabilize in expected time
@@ -138,7 +142,8 @@
             - IpProtocol: tcp
               FromPort: '22'
               ToPort: '22'
-              CidrIp: 0.0.0.0/0
+              #Currently untested. May fail as not joined.
+              CidrIp: !Ref "WanIP"/32
             - IpProtocol: icmp
               FromPort: '-1'
               ToPort: '-1'
@@ -264,7 +269,8 @@
         DependsOn: Test2GatewayToInternet
         Properties:
           RouteTableId: !Ref Test2PrivateRouteTable
-          DestinationCidrBlock: 195.60.27.205/32
+          # Currently untested
+          DestinationCidrBlock: !Ref "WanIP"/32
           GatewayId: !Ref Test2InternetGateway
           
       Test2PrivateSubnet1RouteTableAssociation:

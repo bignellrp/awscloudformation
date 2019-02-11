@@ -47,22 +47,38 @@ Now login to test instance in VPC 1 and confirm you can ping the instance in VPC
 Also test that both VPC1 and VPC2 can get to 8.8.8.8 through the FW.
 
 ```
+~/awscloudformation] $ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.255.117.127 ping -c 4 192.168.2.69
+PING 192.168.2.69 (192.168.2.69) 56(84) bytes of data.
+64 bytes from 192.168.2.69: icmp_seq=1 ttl=254 time=1.01 ms
+64 bytes from 192.168.2.69: icmp_seq=2 ttl=254 time=0.682 ms
+64 bytes from 192.168.2.69: icmp_seq=3 ttl=254 time=0.692 ms
+64 bytes from 192.168.2.69: icmp_seq=4 ttl=254 time=0.665 ms
 
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.242.221.234 ping 192.168.2.58
-PING 192.168.2.58 (192.168.2.58) 56(84) bytes of data.
-64 bytes from 192.168.2.58: icmp_seq=1 ttl=254 time=1.02 ms
-64 bytes from 192.168.2.58: icmp_seq=2 ttl=254 time=0.660 ms
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.242.221.234 ping 8.8.8.8
+--- 192.168.2.69 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3041ms
+rtt min/avg/max/mdev = 0.665/0.762/1.011/0.146 ms
+
+~/awscloudformation] $ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.255.117.127 ping -c 4 8.8.8.8
 PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=49 time=1.78 ms
-64 bytes from 8.8.8.8: icmp_seq=2 ttl=49 time=1.32 ms
-64 bytes from 8.8.8.8: icmp_seq=3 ttl=49 time=3.13 ms
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@52.19.69.166 ping 8.8.8.8
-Warning: Permanently added '52.19.69.166' (ECDSA) to the list of known hosts.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=112 time=1.71 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=112 time=1.24 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=112 time=1.32 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=112 time=1.28 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 1.249/1.393/1.715/0.187 ms
+
+~/awscloudformation] $ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.247.55.51 ping -c 4 8.8.8.8
 PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
-64 bytes from 8.8.8.8: icmp_seq=1 ttl=49 time=164 ms
-64 bytes from 8.8.8.8: icmp_seq=2 ttl=49 time=1.23 ms
-64 bytes from 8.8.8.8: icmp_seq=3 ttl=49 time=1.22 ms
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=112 time=1.80 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=112 time=1.26 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=112 time=1.23 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=112 time=1.22 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 1.228/1.382/1.801/0.242 ms
 
 ```
 

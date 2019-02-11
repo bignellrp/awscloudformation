@@ -17,7 +17,7 @@ vpc2instancepublic=`aws cloudformation describe-stacks --stack-name fortigate-sp
 # Applying the routes
 echo " 
 
-Applying the routes. Check the output for errors.
+Applying the routes. Check the output for errors. Successful output is 4x True.
 
 "
 
@@ -34,9 +34,9 @@ echo "
 Now login to test instance in VPC 1 and confirm you can ping the instance in VPC2. 
 Also test that both VPC1 and VPC2 can get to 8.8.8.8 through the FW.
 
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc1instancepublic ping $vpc2instanceprivate
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc1instancepublic ping 8.8.8.8
-ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc2instancepublic ping 8.8.8.8
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc1instancepublic ping -c 4 $vpc2instanceprivate
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc1instancepublic ping -c 4 8.8.8.8
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc2instancepublic ping -c 4 8.8.8.8
 
 
 "

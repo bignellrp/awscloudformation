@@ -32,7 +32,7 @@ aws cloudformation create-stack --stack-name fortigate-egress --template-body fi
 Once the hub is built then build the spokes with this command (you can edit wanip manually if required):
 
 ```
-wanip=`curl ifconfig.me`
+wanip=`curl -s ifconfig.me`
 aws cloudformation create-stack --stack-name fortigate-spokes --template-body file:///$HOME/awscloudformation/fortigate-spoke.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key" ParameterKey=WanIP,ParameterValue="$wanip"
 ```
 

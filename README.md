@@ -214,3 +214,11 @@ PING 192.168.2.140 (192.168.2.140) 56(84) bytes of data.
 64 bytes from 192.168.2.140: icmp_seq=7 ttl=254 time=1.15 ms
 
 ```
+
+# Project 4: VPC with VPN
+
+Just a plain VPC with a VPN. Use vpn describe commands to grab VPN info. See applyvpn.sh for examples.
+
+```
+aws cloudformation create-stack --stack-name vpc-vpn --template-body file:///$HOME/awscloudformation/vpc-vpn.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
+```

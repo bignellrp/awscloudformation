@@ -136,10 +136,6 @@ localasn=`aws ec2 describe-vpn-connections --filters "Name=transit-gateway-id,Va
 echo "localasn: $localasn" >> $outputvars
 remoteasn=`aws ec2 describe-vpn-connections --filters "Name=transit-gateway-id,Values=$tgwid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==2'`
 echo "remoteasn: $remoteasn" >> $outputvars
-vpn1=`aws ec2 describe-vpn-connections --output text --filters "Name=customer-gateway-id,Values=$cgwid" | awk '/available/' | awk 'NR==1' | awk '{print $6}'`
-echo "vpn1: $vpn1" >> $outputvars
-vpn2=`aws ec2 describe-vpn-connections --output text --filters "Name=customer-gateway-id,Values=$cgwid1" | awk '/available/' | awk 'NR==1' | awk '{print $6}'`
-echo "vpn2: $vpn2" >> $outputvars
 
 echo " 
 
@@ -158,6 +154,11 @@ Check on the GUI for the vpns to go available before pressing enter.
 
 read -p "Press enter to continue"
 
+vpn1=`aws ec2 describe-vpn-connections --output text --filters "Name=customer-gateway-id,Values=$cgwid" | awk '/available/' | awk 'NR==1' | awk '{print $6}'`
+echo "vpn1: $vpn1" >> $outputvars
+vpn2=`aws ec2 describe-vpn-connections --output text --filters "Name=customer-gateway-id,Values=$cgwid1" | awk '/available/' | awk 'NR==1' | awk '{print $6}'`
+echo "vpn2: $vpn2" >> $outputvars
+
 #state=`aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/available/ {print $3}'`
 
 #while [ "$state" != "available" ]
@@ -173,6 +174,14 @@ tgwatt1=`aws ec2 describe-transit-gateway-attachments --output text --filters "N
 echo "tgwatt1: $tgwatt1" >> $outputvars
 tgwatt2=`aws ec2 describe-transit-gateway-attachments --output text --filters "Name=resource-id,Values=$vpn2" | awk '{print $7}'`
 echo "tgwatt2: $tgwatt2" >> $outputvars
+
+echo "
+
+Creating TGW associations and propagations...
+
+"
+
+echo "Creating TGW associations and propagations..." >> $outputvars
 
 aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt1 2>&1 | tee -a $outputvars
 aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt2 2>&1 | tee -a $outputvars

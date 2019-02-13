@@ -50,6 +50,7 @@ echo " Collecting information, this can take a few seconds... " >> $outputvars
 
 # Fill the variables from CF output
 key=`aws cloudformation describe-stacks --stack-name fortigate-egress --output text | awk '/myKeyPair/ {print $3}'`
+echo "key: $key" >> $outputvars
 output01=`echo $HOME/fortigate-egress_output1`
 output02=`echo $HOME/fortigate-egress_output2`
 cgwid=`aws ec2 describe-customer-gateways --filters "Name=ip-address,Values=$fw1" --output text | awk '{print $3}' | awk 'NR==1'`
@@ -148,16 +149,25 @@ Creating the routes. Check the output for errors.
 aws ec2 create-route --route-table-id $spoke1rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
 aws ec2 create-route --route-table-id $spoke2rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
 
-# Need to wait for vpn to be available to avoid this error: An error occurred (IncorrectState)
+echo "
 
-state=`aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/available/ {print $3}'`
-while [ "$state" != "available" ]
-    do
-    echo ...Waiting another 30 seconds...
-    sleep 30
-done
+You now need to wait for vpn to be available to avoid this error: An error occurred (IncorrectState)
+Check on the GUI for the vpns to go available before pressing enter.
 
-echo "VPN is now $state, now they can be attached to the TGW...."
+"
+
+read -p "Press enter to continue"
+
+#state=`aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/available/ {print $3}'`
+
+#while [ "$state" != "available" ]
+#    do
+#    state=`aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/available/ {print $3}'`
+#    echo ...Waiting another 45 seconds...
+#    sleep 45
+#done
+
+#echo "VPN is now $state, now they can be attached to the TGW...."
 
 tgwatt1=`aws ec2 describe-transit-gateway-attachments --output text --filters "Name=resource-id,Values=$vpn1" | awk '{print $7}'`
 echo "tgwatt1: $tgwatt1" >> $outputvars
@@ -492,9 +502,13 @@ echo "
 Now login to test instance in VPC 1 and confirm you can ping the instance in VPC2. 
 Also test that both VPC1 and VPC2 can get to 8.8.8.8 through the FW.
 
+You will need to wait for the VPNs to all show as up before starting testing:
+
+aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/VGWTELEMETRY/'
+aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn2" | awk '/VGWTELEMETRY/'
+
 ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc1instancepublic ping -c 4 $vpc2instanceprivate
 ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc1instancepublic ping -c 4 8.8.8.8
 ssh -oStrictHostKeyChecking=no -i ~/.ssh/$key.pem ec2-user@$vpc2instancepublic ping -c 4 8.8.8.8
-
 
 "

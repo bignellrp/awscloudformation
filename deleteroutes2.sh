@@ -32,6 +32,8 @@ Collecting information....
 
 "
 outputvars=`echo $HOME/fortigate-egress_outputvars`
+outputdel=`echo $HOME/awscloudformation/fortigate-egress_delete`
+key=`cat $outputvars | awk '/key/ {print $2}'`
 cgwid=`cat $outputvars | awk '/cgwid/ {print $2}' | awk 'NR==1'`
 cgwid1=`cat $outputvars | awk '/cgwid1/ {print $2}'`
 tgwid=`cat $outputvars | awk '/tgwid/ {print $2}'`
@@ -40,6 +42,8 @@ tgwatt1=`cat $outputvars | awk '/tgwatt1/ {print $2}'`
 tgwatt2=`cat $outputvars | awk '/tgwatt2/ {print $2}'`
 vpn1=`cat $outputvars | awk '/vpn1/ {print $2}'`
 vpn2=`cat $outputvars | awk '/vpn2/ {print $2}'`
+fw1=`cat $outputvars | awk '/fw1/ {print $2}'`
+fw2=`cat $outputvars | awk '/fw2/ {print $2}'`
 
 read -p "Deleting tgw attachments and VPNs, Are you sure? (y/n)?" choice
 case "$choice" in
@@ -57,6 +61,12 @@ aws ec2 delete-vpn-connection --vpn-connection-id $vpn2
 aws ec2 delete-customer-gateway --customer-gateway-id $cgwid
 aws ec2 delete-customer-gateway --customer-gateway-id $cgwid1
 
+# Comment this out if you want to let CF just delete the firewall.
+# This was used when testing the scripts
+# Currently has a few errors
+
+#ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$fw1 < $outputdel
+#ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$fw2 < $outputdel
 # Commented as the vpn delete should also delete the attachment
 #aws ec2 delete-transit-gateway-vpc-attachment --transit-gateway-attachment-id $tgwatt1
 #aws ec2 delete-transit-gateway-vpc-attachment --transit-gateway-attachment-id $tgwatt2
@@ -79,6 +89,7 @@ aws cloudformation delete-stack --stack-name fortigate-egress
 #state=`aws cloudformation describe-stacks --stack-name fortigate-spokes --output text | awk '/does not exist/'`
 #while [ "$state" != *.exist ]
 #    do
+#    state=`aws cloudformation describe-stacks --stack-name fortigate-spokes --output text | awk '/does not exist/'`
 #    echo ...Waiting another 30 seconds...
 #    sleep 30
 #done

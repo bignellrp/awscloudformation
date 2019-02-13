@@ -94,8 +94,66 @@ https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
 
 ![Fortigate Egress Diagram 2](https://github.com/bignellrp/awscloudformation/blob/master/Fortigate-Egress2.png)
 
+From this point the commands are very similar to project 1 just calling different scripts.
 
+First build the fortigate egress vpc.  We can refer to this as the hub.
 
+```
+aws cloudformation create-stack --stack-name fortigate-egress --template-body file:///$HOME/awscloudformation/fortigate-egress2.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
+```
+
+Once the hub is built then build the spokes with this command (you can edit wanip manually if required):
+
+```
+wanip=`curl -s ifconfig.me`
+aws cloudformation create-stack --stack-name fortigate-spokes --template-body file:///$HOME/awscloudformation/fortigate-spoke2.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key" ParameterKey=WanIP,ParameterValue="$wanip"
+```
+
+Currently the only thing that is not supported with CloudFormation is addition of the spoke routes to the tgw. This can be done using bash by running the following:
+
+```
+chmod 755 $HOME/awscloudformation/applyroutes2.sh
+$HOME/awscloudformation/applyroutes2.sh
+```
+
+Now login to test instance in VPC 1 and confirm you can ping the instance in VPC2. 
+Also test that both VPC1 and VPC2 can get to 8.8.8.8 through the FW.
+
+```
+~/awscloudformation] $ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.255.117.127 ping -c 4 192.168.2.69
+PING 192.168.2.69 (192.168.2.69) 56(84) bytes of data.
+64 bytes from 192.168.2.69: icmp_seq=1 ttl=254 time=1.01 ms
+64 bytes from 192.168.2.69: icmp_seq=2 ttl=254 time=0.682 ms
+64 bytes from 192.168.2.69: icmp_seq=3 ttl=254 time=0.692 ms
+64 bytes from 192.168.2.69: icmp_seq=4 ttl=254 time=0.665 ms
+
+--- 192.168.2.69 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3041ms
+rtt min/avg/max/mdev = 0.665/0.762/1.011/0.146 ms
+
+~/awscloudformation] $ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.255.117.127 ping -c 4 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=112 time=1.71 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=112 time=1.24 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=112 time=1.32 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=112 time=1.28 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 1.249/1.393/1.715/0.187 ms
+
+~/awscloudformation] $ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@34.247.55.51 ping -c 4 8.8.8.8
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=112 time=1.80 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=112 time=1.26 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=112 time=1.23 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=112 time=1.22 ms
+
+--- 8.8.8.8 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+rtt min/avg/max/mdev = 1.228/1.382/1.801/0.242 ms
+
+```
 
 
 

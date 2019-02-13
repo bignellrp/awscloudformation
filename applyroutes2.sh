@@ -73,47 +73,46 @@ echo "
 Collecting more information, this can also take a few seconds...
 
 "
-
 remip01=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==4'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remip01: $remip01" >> $outputvars
 remip02=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==8'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remip02: $remip02" >> $outputvars
 remip03=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==4'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remip03: $remip03" >> $outputvars
 remip04=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==8'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remip04: $remip04" >> $outputvars
 locip01=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==2'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "locip01: $locip01" >> $outputvars
 locip02=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==6'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "locip02: $locip02" >> $outputvars
 locip03=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==2'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "locip03: $locip03" >> $outputvars
 locip04=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==6'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "locip04: $locip04" >> $outputvars
 remgw01=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==3'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remgw01: $remgw01" >> $outputvars
 remgw02=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==7'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remgw02: $remgw02" >> $outputvars
 remgw03=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==3'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remgw03: $remgw03" >> $outputvars
 remgw04=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<ip_address>)[^<]+" | awk 'NR==7'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remgw04: $remgw04" >> $outputvars
 secret01=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<pre_shared_key>)[^<]+" | awk 'NR==1'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "secret01: $secret01" >> $outputvars
 secret02=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid" | grep -oPm1 "(?<=<pre_shared_key>)[^<]+" | awk 'NR==2'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "secret02: $secret02" >> $outputvars
 secret03=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<pre_shared_key>)[^<]+" | awk 'NR==1'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "secret03: $secret03" >> $outputvars
 secret04=`aws ec2 describe-vpn-connections --filters "Name=customer-gateway-id,Values=$cgwid1" | grep -oPm1 "(?<=<pre_shared_key>)[^<]+" | awk 'NR==2'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "secret04: $secret04" >> $outputvars
 localasn=`aws ec2 describe-vpn-connections --filters "Name=transit-gateway-id,Values=$tgwid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==1'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "localasn: $localasn" >> $outputvars
 remoteasn=`aws ec2 describe-vpn-connections --filters "Name=transit-gateway-id,Values=$tgwid" | grep -oPm1 "(?<=<asn>)[^<]+" | awk 'NR==2'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "remoteasn: $remoteasn" >> $outputvars
 vpn1=`aws ec2 describe-vpn-connections --output text --filters "Name=customer-gateway-id,Values=$cgwid" | awk '/available/' | awk 'NR==1' | awk '{print $6}'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "vpn1: $vpn1" >> $outputvars
 vpn2=`aws ec2 describe-vpn-connections --output text --filters "Name=customer-gateway-id,Values=$cgwid1" | awk '/available/' | awk 'NR==1' | awk '{print $6}'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "vpn2: $vpn2" >> $outputvars
 
 echo " 
 
@@ -135,9 +134,9 @@ done
 echo "VPN is now $state, now they can be attached to the TGW...."
 
 tgwatt1=`aws ec2 describe-transit-gateway-attachments --output text --filters "Name=resource-id,Values=$vpn1" | awk '{print $7}'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "tgwatt1: $tgwatt1" >> $outputvars
 tgwatt2=`aws ec2 describe-transit-gateway-attachments --output text --filters "Name=resource-id,Values=$vpn2" | awk '{print $7}'`
-echo "cgwid: $cgwid" >> $outputvars
+echo "tgwatt2: $tgwatt2" >> $outputvars
 
 aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt1 2>&1 | tee -a $outputvars
 aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt2 2>&1 | tee -a $outputvars
@@ -260,7 +259,7 @@ config router route-map
     next
 end
 config router prefix-list
-    edit "Default'
+    edit "Default"
         config rule
             edit 10
                 set prefix 0.0.0.0/0
@@ -364,19 +363,51 @@ config system zone
 end
 config router bgp
     set as $localasn
-    set router-id $lgw1
+    set router-id $lgw
     config neighbor
         edit "$remip03"
             set capability-default-originate enable
             set description "vpn_0"
             set remote-as $remoteasn
+            set route-map-out "RM_OUT"
+            set weight 200
         next
         edit "$remip04"
             set capability-default-originate enable
             set description "vpn_1"
             set remote-as $remoteasn
+            set route-map-out "RM_OUT_BACKUP"
+            set weight 100
         next
     end
+end
+config router route-map
+    edit "RM_OUT"
+        config rule
+            edit 10
+                set match-ip-address "Default"
+            next
+        end
+    next
+    edit "RM_OUT_BACKUP"
+        config rule
+            edit 10
+                set match-ip-address "Default"
+                set set-aspath "$localasn $localasn"
+            next
+        end
+    next
+end
+config router prefix-list
+    edit "Default"
+        config rule
+            edit 10
+                set prefix 0.0.0.0/0
+                unset ge
+                unset le
+            next
+        end
+    next
 end
 config firewall policy
     edit 0

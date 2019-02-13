@@ -155,6 +155,19 @@ rtt min/avg/max/mdev = 1.228/1.382/1.801/0.242 ms
 
 ```
 
+When you have finished testing you can delete the stacks but as commands were run separately there is some tidyup to be done.
+
+You can use the delete-routes2.sh to tidy up. These should be run in order below waiting for each to complete before stating the next.  This could all be automated within the script if required.
+
+```
+chmod 755 $HOME/awscloudformation/deleteroutes2.sh
+$HOME/awscloudformation/deleteroutes2.sh
+
+aws cloudformation delete-stack --stack-name fortigate-spokes
+
+aws cloudformation delete-stack --stack-name fortigate-egress
+```
+
 
 
 # Project 3: VPC with VPN connecting to single Fortigate

@@ -1,5 +1,31 @@
 #!/bin/bash
 
+#Checking the account is the network test account
+ACCOUNT=`aws sts get-caller-identity | grep Account | awk '{print $2}' | sed 's/"//g' | sed 's/,//g'`
+re='^[0-9]+$'
+if ! [[ $ACCOUNT =~ $re ]] ; then
+   exit 1
+fi
+echo
+echo
+echo "###############################################################################################"
+echo " Using sts key for account $ACCOUNT "
+echo "###############################################################################################"
+echo
+if [ $ACCOUNT != "855882134798" ]; then
+  echo "###############################################################################################"
+  echo "WARNING: You are not in the network test account 855882134798."
+  echo "###############################################################################################"
+  read -p "Continue (y/n)?" choice
+  case "$choice" in
+    y|Y ) echo;;
+    n|N ) exit 1;;
+    * ) exit 1;;
+  esac
+else
+  echo
+fi
+
 echo " 
 
 Creating customer gateways.  This must be done first as other commands rely on this info.
@@ -11,8 +37,8 @@ fw1=`aws cloudformation describe-stacks --stack-name fortigate-egress --output t
 echo "fw1: $fw1" >> $outputvars
 fw2=`aws cloudformation describe-stacks --stack-name fortigate-egress --output text | awk '/FW2Public/ {print $3}'`
 echo "fw2: $fw2" >> $outputvars
-aws ec2 create-customer-gateway --type ipsec.1 --public-ip $fw1 --bgp-asn 65000 2>&1 | tee -a $outputvars
-aws ec2 create-customer-gateway --type ipsec.1 --public-ip $fw2 --bgp-asn 65000 2>&1 | tee -a $outputvars
+#aws ec2 create-customer-gateway --type ipsec.1 --public-ip $fw1 --bgp-asn 65000 2>&1 | tee -a $outputvars
+#aws ec2 create-customer-gateway --type ipsec.1 --public-ip $fw2 --bgp-asn 65000 2>&1 | tee -a $outputvars
 
 echo " 
 
@@ -65,8 +91,8 @@ Creating the VPNs. Check the output for errors.
 "
 # Output to screen and into the debug file for reference
 
-aws ec2 create-vpn-connection --type ipsec.1 --customer-gateway-id $cgwid --transit-gateway-id $tgwid 2>&1 | tee -a $outputvars
-aws ec2 create-vpn-connection --type ipsec.1 --customer-gateway-id $cgwid1 --transit-gateway-id $tgwid 2>&1 | tee -a $outputvars
+#aws ec2 create-vpn-connection --type ipsec.1 --customer-gateway-id $cgwid --transit-gateway-id $tgwid 2>&1 | tee -a $outputvars
+#aws ec2 create-vpn-connection --type ipsec.1 --customer-gateway-id $cgwid1 --transit-gateway-id $tgwid 2>&1 | tee -a $outputvars
 
 echo "
 
@@ -119,29 +145,29 @@ echo "
 Creating the routes. Check the output for errors.
 
 "
-aws ec2 create-route --route-table-id $spoke1rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
-aws ec2 create-route --route-table-id $spoke2rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+#aws ec2 create-route --route-table-id $spoke1rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
+#aws ec2 create-route --route-table-id $spoke2rtbid --destination-cidr-block 0.0.0.0/0 --gateway-id $tgwid
 
 # Need to wait for vpn to be available to avoid this error: An error occurred (IncorrectState)
 
-state=`aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/available/ {print $3}'`
-while [ "$state" != "available" ]
-    do
-    echo ...Waiting another 30 seconds...
-    sleep 30
-done
+#state=`aws ec2 describe-vpn-connections --output text --filters "Name=vpn-connection-id,Values=$vpn1" | awk '/available/ {print $3}'`
+#while [ "$state" != "available" ]
+#    do
+#    echo ...Waiting another 30 seconds...
+#    sleep 30
+#done
 
-echo "VPN is now $state, now they can be attached to the TGW...."
+#echo "VPN is now $state, now they can be attached to the TGW...."
 
 tgwatt1=`aws ec2 describe-transit-gateway-attachments --output text --filters "Name=resource-id,Values=$vpn1" | awk '{print $7}'`
 echo "tgwatt1: $tgwatt1" >> $outputvars
 tgwatt2=`aws ec2 describe-transit-gateway-attachments --output text --filters "Name=resource-id,Values=$vpn2" | awk '{print $7}'`
 echo "tgwatt2: $tgwatt2" >> $outputvars
 
-aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt1 2>&1 | tee -a $outputvars
-aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt2 2>&1 | tee -a $outputvars
-aws ec2 enable-transit-gateway-route-table-propagation --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt1 2>&1 | tee -a $outputvars
-aws ec2 enable-transit-gateway-route-table-propagation --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt2 2>&1 | tee -a $outputvars
+#aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt1 2>&1 | tee -a $outputvars
+#aws ec2 associate-transit-gateway-route-table --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt2 2>&1 | tee -a $outputvars
+#aws ec2 enable-transit-gateway-route-table-propagation --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt1 2>&1 | tee -a $outputvars
+#aws ec2 enable-transit-gateway-route-table-propagation --transit-gateway-route-table-id $tgwrtbid --transit-gateway-attachment-id $tgwatt2 2>&1 | tee -a $outputvars
 
 echo "
 
@@ -221,6 +247,34 @@ config system zone
         set interface "vpn-0" "vpn-1"
     next
 end
+config router prefix-list
+    edit "Default"
+        config rule
+            edit 10
+                set prefix 0.0.0.0/0
+                unset ge
+                unset le
+            next
+        end
+    next
+end
+config router route-map
+    edit "RM_OUT"
+        config rule
+            edit 10
+                set match-ip-address "Default"
+            next
+        end
+    next
+    edit "RM_OUT_BACKUP"
+        config rule
+            edit 10
+                set match-ip-address "Default"
+                set set-aspath "$localasn $localasn"
+            next
+        end
+    next
+end
 config router bgp
     set as $localasn
     set router-id $lgw
@@ -240,34 +294,6 @@ config router bgp
             set weight 100
         next
     end
-end
-config router route-map
-    edit "RM_OUT"
-        config rule
-            edit 10
-                set match-ip-address "Default"
-            next
-        end
-    next
-    edit "RM_OUT_BACKUP"
-        config rule
-            edit 10
-                set match-ip-address "Default"
-                set set-aspath "$localasn $localasn"
-            next
-        end
-    next
-end
-config router prefix-list
-    edit "Default"
-        config rule
-            edit 10
-                set prefix 0.0.0.0/0
-                unset ge
-                unset le
-            next
-        end
-    next
 end
 config firewall policy
     edit 0
@@ -361,6 +387,34 @@ config system zone
         set interface "vpn-0" "vpn-1"
     next
 end
+config router prefix-list
+    edit "Default"
+        config rule
+            edit 10
+                set prefix 0.0.0.0/0
+                unset ge
+                unset le
+            next
+        end
+    next
+end
+config router route-map
+    edit "RM_OUT"
+        config rule
+            edit 10
+                set match-ip-address "Default"
+            next
+        end
+    next
+    edit "RM_OUT_BACKUP"
+        config rule
+            edit 10
+                set match-ip-address "Default"
+                set set-aspath "$localasn $localasn"
+            next
+        end
+    next
+end
 config router bgp
     set as $localasn
     set router-id $lgw
@@ -380,34 +434,6 @@ config router bgp
             set weight 100
         next
     end
-end
-config router route-map
-    edit "RM_OUT"
-        config rule
-            edit 10
-                set match-ip-address "Default"
-            next
-        end
-    next
-    edit "RM_OUT_BACKUP"
-        config rule
-            edit 10
-                set match-ip-address "Default"
-                set set-aspath "$localasn $localasn"
-            next
-        end
-    next
-end
-config router prefix-list
-    edit "Default"
-        config rule
-            edit 10
-                set prefix 0.0.0.0/0
-                unset ge
-                unset le
-            next
-        end
-    next
 end
 config firewall policy
     edit 0
@@ -448,8 +474,8 @@ Now applying the config to the firewalls...
 
 echo " The following files were created: 1. $output01 2. $output02 Now applying the config to the firewalls... " >> $outputvars
 
-ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$fw1 < $output01 2>&1 | tee -a $outputvars
-ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$fw2 < $output02 2>&1 | tee -a $outputvars
+#ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$fw1 < $output01 2>&1 | tee -a $outputvars
+#ssh -oStrictHostKeyChecking=no -T -i ~/.ssh/$key.pem admin@$fw2 < $output02 2>&1 | tee -a $outputvars
 
 
 echo "

@@ -1,0 +1,356 @@
+    AWSTemplateFormatVersion: "2010-09-09"
+
+    Description: "Network Services Template for a FortiGate VM64 Firewall"
+
+    Parameters: 
+      CidrBlockParameter:
+        Type: String
+        Default: 192.168.7.0/24
+      PublicSubnet1Parameter:
+        Type: String
+        Default: 192.168.7.0/26
+      PublicSubnet2Parameter:
+        Type: String
+        Default: 192.168.7.64/26
+#      PrivateSubnet1Parameter:
+#        Type: String
+#        Default: 192.168.7.128/26
+#      PrivateSubnet2Parameter:
+#        Type: String
+#        Default: 192.168.7.192/26
+      myKeyPair: 
+        Description: Amazon EC2 Key Pair
+        Type: "AWS::EC2::KeyPair::KeyName"
+
+    Resources:
+      TransitGateway:
+        Type: "AWS::EC2::TransitGateway"
+        Properties:
+          AmazonSideAsn: 64512
+          AutoAcceptSharedAttachments: disable
+          DefaultRouteTableAssociation: disable
+          DefaultRouteTablePropagation: disable
+          Description: !Join [ -, [!Ref "AWS::StackName",global]]
+          DnsSupport: enable
+          Tags: 
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",global]]
+          VpnEcmpSupport: enable
+
+      TransitGatewayRouteTable:
+        Type: "AWS::EC2::TransitGatewayRouteTable"
+        Properties:
+          Tags: 
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Egress]]
+          TransitGatewayId: !Ref TransitGateway
+
+      PubPrivateVPC:
+        Type: 'AWS::EC2::VPC'
+        Properties:
+          CidrBlock:
+            Ref: CidrBlockParameter
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+
+      PublicSubnet1:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: PublicSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-1]]
+
+      PublicSubnet2:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: PublicSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",public-subnet-2]]
+     
+#      PrivateSubnet1:
+#        Type: 'AWS::EC2::Subnet'
+#        Properties:
+#          VpcId: !Ref PubPrivateVPC
+#          AvailabilityZone: eu-west-1a
+#          CidrBlock:
+#            Ref: PrivateSubnet1Parameter
+#          MapPublicIpOnLaunch: false
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-1]]
+#     
+#      PrivateSubnet2:
+#        Type: 'AWS::EC2::Subnet'
+#        Properties:
+#          VpcId: !Ref PubPrivateVPC
+#          AvailabilityZone: eu-west-1b
+#          CidrBlock:
+#            Ref: PrivateSubnet2Parameter
+#          MapPublicIpOnLaunch: false
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2]]
+     
+      InternetGateway:
+        Type: 'AWS::EC2::InternetGateway'
+        Properties:
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName"]]
+            - Key: Network
+              Value: Public
+      
+      GatewayToInternet:
+        Type: 'AWS::EC2::VPCGatewayAttachment'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          InternetGatewayId: !Ref InternetGateway
+
+      PublicRouteTable:
+        Type: 'AWS::EC2::RouteTable'
+        Properties:
+          VpcId: !Ref PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",publicRT]]
+
+#      PrivateRouteTable:
+#        Type: 'AWS::EC2::RouteTable'
+#        Properties:
+#          VpcId: !Ref PubPrivateVPC
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",privateRT]]
+
+      PublicRoute:
+        Type: 'AWS::EC2::Route'
+        DependsOn: GatewayToInternet
+        Properties:
+          RouteTableId: !Ref PublicRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          GatewayId: !Ref InternetGateway
+
+      PublicSubnet1RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          RouteTableId: !Ref PublicRouteTable
+
+      PublicSubnet2RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref PublicSubnet2
+          RouteTableId: !Ref PublicRouteTable
+          
+#      PrivateSubnet1RouteTableAssociation:
+#        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+#        Properties:
+#          SubnetId: !Ref PrivateSubnet1
+#          RouteTableId: !Ref PrivateRouteTable
+#     
+#      PrivateSubnet2RouteTableAssociation:
+#        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+#        Properties:
+#          SubnetId: !Ref PrivateSubnet2
+#          RouteTableId: !Ref PrivateRouteTable
+
+      EIP1:
+        Type: AWS::EC2::EIP
+        Properties:
+          Domain: vpc
+
+      AssociateEIP1:
+        Type: AWS::EC2::EIPAssociation
+        Properties:
+          AllocationId: !GetAtt EIP1.AllocationId
+          NetworkInterfaceId: !Ref ENI1
+
+      ENI1:
+        Type: AWS::EC2::NetworkInterface
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          Description: FW1 Outside
+          GroupSet: 
+          - !Ref SGFirewall
+          SourceDestCheck: false
+          Tags:
+            -
+              Key: Network
+              Value: ENI1
+              Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",ENI1]]
+
+      EIP2:
+        Type: AWS::EC2::EIP
+        Properties:
+          Domain: vpc
+
+      AssociateEIP3:
+        Type: AWS::EC2::EIPAssociation
+        Properties:
+          AllocationId: !GetAtt EIP2.AllocationId
+          NetworkInterfaceId: !Ref ENI3
+
+      ENI3:
+        Type: AWS::EC2::NetworkInterface
+        Properties:
+          SubnetId: !Ref PublicSubnet1
+          Description: FW2 Outside
+          GroupSet:
+          - !Ref SGFirewall
+          SourceDestCheck: false
+          Tags:
+            -
+              Key: Network
+              Value: ENI3
+              Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",ENI3]]
+
+      SGFirewall:
+        Type: 'AWS::EC2::SecurityGroup'
+        DependsOn: PubPrivateVPC
+        Properties:
+          GroupDescription: Allow VPNs into firewall
+          VpcId: !Ref PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: '22'
+              ToPort: '22'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: icmp
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: 50
+              FromPort: '0'
+              ToPort: '0'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: 51
+              FromPort: '0'
+              ToPort: '0'
+              CidrIp: 0.0.0.0/0
+            - IpProtocol: tcp
+              FromPort: '443'
+              ToPort: '443'
+              CidrIp: 0.0.0.0/0 
+            - IpProtocol: udp
+              FromPort: '500'
+              ToPort: '500'
+              CidrIp: 0.0.0.0/0 
+            - IpProtocol: udp
+              FromPort: '4500'
+              ToPort: '4500'
+              CidrIp: 0.0.0.0/0 
+
+      MyInstance:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+          ImageId: ami-0aeda1bdca1b205bd
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces: 
+            - DeviceIndex: "0"
+              NetworkInterfaceId: !Ref ENI1
+          InstanceType: c5.large
+          BlockDeviceMappings:
+            # Mount Existing Device with changes to volume size and type
+            - DeviceName: "/dev/sda1"
+              Ebs:
+                # This is the Fortigate /root image. You don't need big disk size.
+                VolumeSize: "2"   # Default size: 2GB
+                VolumeType: "gp2" # Default type: standard
+            - DeviceName: "/dev/sdb"
+              Ebs:
+                # This is for data logging. If you need to keep large historical data
+                # you can increase the volume size.
+                VolumeSize: "30"  # Default size: 30GB
+                VolumeType: "gp2" # Default type: magnetic
+          AvailabilityZone: eu-west-1a
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",FW1]]
+
+      MyInstance2:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+          ImageId: ami-0aeda1bdca1b205bd
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces:
+            - DeviceIndex: "0"
+              NetworkInterfaceId: !Ref ENI3
+          InstanceType: c5.large
+          BlockDeviceMappings:
+            # Mount Existing Device with changes to volume size and type
+            - DeviceName: "/dev/sda1"
+              Ebs:
+                # This is the Fortigate /root image. You don't need big disk size.
+                VolumeSize: "2"   # Default size: 2GB
+                VolumeType: "gp2" # Default type: standard
+            - DeviceName: "/dev/sdb"
+              Ebs:
+                # This is for data logging. If you need to keep large historical data
+                # you can increase the volume size.
+                VolumeSize: "30"  # Default size: 30GB
+                VolumeType: "gp2" # Default type: magnetic
+          AvailabilityZone: eu-west-1a
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",FW2]]
+
+      TransitGatewayAttachment:
+        Type: "AWS::EC2::TransitGatewayAttachment"
+        Properties:
+          SubnetIds:
+            - !Ref PrivateSubnet1
+            - !Ref PrivateSubnet2
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",FirewallAttachment]]
+          TransitGatewayId: !Ref TransitGateway
+          VpcId: !Ref PubPrivateVPC
+
+      TransitGatewayRTAttachment:
+        Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+      TransitGatewayPropogation:
+        Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+    Outputs:
+      MyInstancePrivateIp:
+        Value: !GetAtt MyInstance.PrivateIp
+      MyInstance2PrivateIp:
+        Value: !GetAtt MyInstance2.PrivateIp
+      MyInstanceOutsideIp:
+        Value: !GetAtt ENI1.PrimaryPrivateIpAddress
+      MyInstance2OutsideIp:
+        Value: !GetAtt ENI3.PrimaryPrivateIpAddress
+      TransitGatewayOutput:
+        Value: !Ref TransitGateway
+        Export:
+          Name: !Sub '${AWS::StackName}-TransitGateway'
+      RouteTableID:
+        Value: !Ref PrivateRouteTable
+      TransitGatewayRTBOutput:
+        Value: !Ref TransitGatewayRouteTable
+        Export: 
+          Name: !Sub '${AWS::StackName}-TransitGatewayRouteTable'
+      FW1Public:
+        Value: !Ref EIP1
+      FW2Public:
+        Value: !Ref EIP2

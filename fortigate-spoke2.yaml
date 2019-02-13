@@ -1,0 +1,325 @@
+    AWSTemplateFormatVersion: "2010-09-09"
+
+    Description: "Building two spoke VPCs for use with Fortinet Egress connected with Transit GW"
+
+    Parameters: 
+      Test1CidrBlockParameter:
+        Type: String
+        Default: 192.168.1.0/24
+      Test1PrivateSubnet1Parameter:
+        Type: String
+        Default: 192.168.1.0/25
+      Test1PrivateSubnet2Parameter:
+        Type: String
+        Default: 192.168.1.128/25
+      Test2CidrBlockParameter:
+        Type: String
+        Default: 192.168.2.0/24
+      Test2PrivateSubnet1Parameter:
+        Type: String
+        Default: 192.168.2.0/25
+      Test2PrivateSubnet2Parameter:
+        Type: String
+        Default: 192.168.2.128/25
+      myKeyPair: 
+        Description: Amazon EC2 Key Pair
+        Type: "AWS::EC2::KeyPair::KeyName"
+        Default: myKey
+      WanIP:
+        Description: My WAN IP
+        Type: String
+      ParentVPCStack:
+        Description: 'Stack name of parent VPC stack'
+        Type: String
+        Default: fortigate-egress
+
+    Resources:
+## Start of Test 1 Section
+      Test1PubPrivateVPC:
+        Type: 'AWS::EC2::VPC'
+        Properties:
+          CidrBlock:
+            Ref: Test1CidrBlockParameter
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Test1]]
+
+      Test1PrivateSubnet1:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref Test1PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: Test1PrivateSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-1-Test1]]
+
+      Test1PrivateSubnet2:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref Test1PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: Test1PrivateSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2-Test1]]
+
+      Test1InternetGateway:
+        Type: 'AWS::EC2::InternetGateway'
+        Properties:
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Test1]]
+            - Key: Network
+              Value: Public
+
+      Test1GatewayToInternet:
+        Type: 'AWS::EC2::VPCGatewayAttachment'
+        Properties:
+          VpcId: !Ref Test1PubPrivateVPC
+          InternetGatewayId: !Ref Test1InternetGateway
+
+      Test1PrivateRouteTable:
+        Type: 'AWS::EC2::RouteTable'
+        Properties:
+          VpcId: !Ref Test1PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-Test1]]
+
+      Test1PublicRoute:
+        Type: 'AWS::EC2::Route'
+        DependsOn: Test1GatewayToInternet
+        Properties:
+          RouteTableId: !Ref Test1PrivateRouteTable
+          # Currently untested
+          DestinationCidrBlock: !Join [ /, [!Ref "WanIP",32]]
+          GatewayId: !Ref Test1InternetGateway
+
+      Test1PrivateSubnet1RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref Test1PrivateSubnet1
+          RouteTableId: !Ref Test1PrivateRouteTable
+     
+      Test1PrivateSubnet2RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref Test1PrivateSubnet2
+          RouteTableId: !Ref Test1PrivateRouteTable
+
+      Test1SGPing:
+        Type: 'AWS::EC2::SecurityGroup'
+        DependsOn: Test1PubPrivateVPC
+        Properties:
+          GroupDescription: Allow SSH ICMP and IPERF from TP Networks
+          VpcId: !Ref Test1PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: '22'
+              ToPort: '22'
+              CidrIp: !Join [ /, [!Ref "WanIP",32]]
+            - IpProtocol: icmp
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+              
+      Test1MyInstance:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+          ImageId: ami-ca0135b3
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces:
+            - AssociatePublicIpAddress: "true"
+              DeviceIndex: "0"
+              GroupSet:
+                - Ref: "Test1SGPing"
+              SubnetId:
+                Ref: "Test1PrivateSubnet1"
+          InstanceType: t2.micro
+          AvailabilityZone: eu-west-1a
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",testmachine-Test1]]
+
+      TransitGatewayAttachmentTest1:
+        Type: "AWS::EC2::TransitGatewayAttachment"
+        Properties:
+          SubnetIds:
+            - !Ref Test1PrivateSubnet1
+            - !Ref Test1PrivateSubnet2
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Test1]]
+          TransitGatewayId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGateway'}
+          VpcId: !Ref Test1PubPrivateVPC
+
+      TransitGatewayRTAttachmentTest1:
+        Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest1
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
+
+      TransitGatewayPropogationTest1:
+        Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest1
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
+
+## End of Test 1 Section
+
+## Start of Test 2 Section
+
+      Test2PubPrivateVPC:
+        Type: 'AWS::EC2::VPC'
+        Properties:
+          CidrBlock:
+            Ref: Test2CidrBlockParameter
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Test2]]
+     
+      Test2PrivateSubnet1:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref Test2PubPrivateVPC
+          AvailabilityZone: eu-west-1a
+          CidrBlock:
+            Ref: Test2PrivateSubnet1Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-1-Test2]]
+     
+      Test2PrivateSubnet2:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+          VpcId: !Ref Test2PubPrivateVPC
+          AvailabilityZone: eu-west-1b
+          CidrBlock:
+            Ref: Test2PrivateSubnet2Parameter
+          MapPublicIpOnLaunch: false
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-subnet-2-Test2]]
+     
+      Test2InternetGateway:
+        Type: 'AWS::EC2::InternetGateway'
+        Properties:
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Test2]]
+            - Key: Network
+              Value: Public
+      
+      Test2GatewayToInternet:
+        Type: 'AWS::EC2::VPCGatewayAttachment'
+        Properties:
+          VpcId: !Ref Test2PubPrivateVPC
+          InternetGatewayId: !Ref Test2InternetGateway
+
+      Test2PrivateRouteTable:
+        Type: 'AWS::EC2::RouteTable'
+        Properties:
+          VpcId: !Ref Test2PubPrivateVPC
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",private-Test2]]
+
+      Test2PublicRoute:
+        Type: 'AWS::EC2::Route'
+        DependsOn: Test2GatewayToInternet
+        Properties:
+          RouteTableId: !Ref Test2PrivateRouteTable
+          DestinationCidrBlock: !Join [ /, [!Ref "WanIP",32]]
+          GatewayId: !Ref Test2InternetGateway
+          
+      Test2PrivateSubnet1RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref Test2PrivateSubnet1
+          RouteTableId: !Ref Test2PrivateRouteTable
+     
+      Test2PrivateSubnet2RouteTableAssociation:
+        Type: 'AWS::EC2::SubnetRouteTableAssociation'
+        Properties:
+          SubnetId: !Ref Test2PrivateSubnet2
+          RouteTableId: !Ref Test2PrivateRouteTable
+
+      Test2SGPing:
+        Type: 'AWS::EC2::SecurityGroup'
+        DependsOn: Test2PubPrivateVPC
+        Properties:
+          GroupDescription: Allow SSH ICMP and IPERF from TP Networks
+          VpcId: !Ref Test2PubPrivateVPC
+          SecurityGroupIngress:
+            - IpProtocol: tcp
+              FromPort: '22'
+              ToPort: '22'
+              CidrIp: !Join [ /, [!Ref "WanIP",32]]
+            - IpProtocol: icmp
+              FromPort: '-1'
+              ToPort: '-1'
+              CidrIp: 0.0.0.0/0
+              
+      Test2MyInstance:
+        Type: 'AWS::EC2::Instance'
+        Properties:
+          ImageId: ami-ca0135b3
+          KeyName: !Ref myKeyPair
+          NetworkInterfaces: 
+            - AssociatePublicIpAddress: "true"
+              DeviceIndex: "0"
+              GroupSet: 
+                - Ref: "Test2SGPing"
+              SubnetId: 
+                Ref: "Test2PrivateSubnet1"
+          InstanceType: t2.micro
+          AvailabilityZone: eu-west-1a
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",testmachine-Test2]]
+
+      TransitGatewayAttachmentTest2:
+        Type: "AWS::EC2::TransitGatewayAttachment"
+        Properties:
+          SubnetIds:
+            - !Ref Test2PrivateSubnet1
+            - !Ref Test2PrivateSubnet2
+          Tags:
+            - Key: Name
+              Value: !Join [ -, [!Ref "AWS::StackName",Test2]]
+          TransitGatewayId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGateway'}
+          VpcId: !Ref Test2PubPrivateVPC
+
+      TransitGatewayRTAttachmentTest2:
+        Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest2
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
+
+      TransitGatewayPropogationTest2:
+        Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
+        Properties:
+          TransitGatewayAttachmentId: !Ref TransitGatewayAttachmentTest2
+          TransitGatewayRouteTableId: {'Fn::ImportValue': !Sub '${ParentVPCStack}-TransitGatewayRouteTable'}
+
+## End of Test 2 Section
+
+    Outputs:
+      Test1InstancesPrivateIp:
+        Value: !GetAtt Test1MyInstance.PrivateIp
+      Test2InstancesPrivateIp:
+        Value: !GetAtt Test2MyInstance.PrivateIp
+      Test1InstancesPublicIp:
+        Value: !GetAtt Test1MyInstance.PublicIp
+      Test2InstancesPublicIp:
+        Value: !GetAtt Test2MyInstance.PublicIp
+      Test1RouteTableID:
+        Value: !Ref Test1PrivateRouteTable
+      Test2RouteTableID:
+        Value: !Ref Test2PrivateRouteTable

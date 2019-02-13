@@ -82,10 +82,9 @@ rtt min/avg/max/mdev = 1.228/1.382/1.801/0.242 ms
 
 ```
 
+# Project 2: Fortigate Egress using AWS Transit GW with 2 FWs
 
-# Fortigate Egress Next steps
-
-The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW directly which would bypasss the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
+The script fortigate-egress currently only builds a single firewall with static routing via a vpc attachment (eni).  This does not provide AZ resiliency.  To add a second firewall VPNs would be required that connect back to the TGW directly which would bypass the vpc attachment. Traffic would be distributed between them using ECMP and all the routes would be advertised over the tunnels using BGP.
 
 Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
@@ -93,8 +92,14 @@ There is a similar github project that has solved the automation of the tgw rout
 
 https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
 
+![Fortigate Egress Diagram 2](https://github.com/bignellrp/awscloudformation/blob/master/Fortigate-Egress2.png)
 
-# Project 2: VPC with VPN connecting to single Fortigate
+
+
+
+
+
+# Project 3: VPC with VPN connecting to single Fortigate
 
 This project is to create a VPC with a VPN and use a bash script to build the VPN onto a Fortigate in a separate VPC.
 

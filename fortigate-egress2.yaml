@@ -172,6 +172,7 @@
 
       AssociateEIP1:
         Type: AWS::EC2::EIPAssociation
+        DependsOn: MyInstance
         Properties:
           AllocationId: !GetAtt EIP1.AllocationId
           NetworkInterfaceId: !Ref ENI1
@@ -198,6 +199,7 @@
 
       AssociateEIP3:
         Type: AWS::EC2::EIPAssociation
+        DependsOn: MyInstance2
         Properties:
           AllocationId: !GetAtt EIP2.AllocationId
           NetworkInterfaceId: !Ref ENI3
@@ -307,29 +309,30 @@
             - Key: Name
               Value: !Join [ -, [!Ref "AWS::StackName",FW2]]
 
-      TransitGatewayAttachment:
-        Type: "AWS::EC2::TransitGatewayAttachment"
-        Properties:
-          SubnetIds:
-            - !Ref PrivateSubnet1
-            - !Ref PrivateSubnet2
-          Tags:
-            - Key: Name
-              Value: !Join [ -, [!Ref "AWS::StackName",FirewallAttachment]]
-          TransitGatewayId: !Ref TransitGateway
-          VpcId: !Ref PubPrivateVPC
-
-      TransitGatewayRTAttachment:
-        Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
-        Properties:
-          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
-          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
-
-      TransitGatewayPropogation:
-        Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
-        Properties:
-          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
-          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+# Commented as not required when VPN attaches directly to the TGW
+#      TransitGatewayAttachment:
+#        Type: "AWS::EC2::TransitGatewayAttachment"
+#        Properties:
+#          SubnetIds:
+#            - !Ref PrivateSubnet1
+#            - !Ref PrivateSubnet2
+#          Tags:
+#            - Key: Name
+#              Value: !Join [ -, [!Ref "AWS::StackName",FirewallAttachment]]
+#          TransitGatewayId: !Ref TransitGateway
+#          VpcId: !Ref PubPrivateVPC
+#
+#      TransitGatewayRTAttachment:
+#        Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
+#        Properties:
+#          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+#          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+#
+#      TransitGatewayPropogation:
+#        Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
+#        Properties:
+#          TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+#          TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
 
     Outputs:
       MyInstancePrivateIp:
@@ -345,7 +348,7 @@
         Export:
           Name: !Sub '${AWS::StackName}-TransitGateway'
       RouteTableID:
-        Value: !Ref PrivateRouteTable
+        Value: !Ref PublicRouteTable
       TransitGatewayRTBOutput:
         Value: !Ref TransitGatewayRouteTable
         Export: 

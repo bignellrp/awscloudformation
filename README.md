@@ -88,10 +88,6 @@ The script fortigate-egress currently only builds a single firewall with static 
 
 Unfortunately there is no native support for VPN creation so additional scripting would be required to facilitate this.
 
-There is a similar github project that has solved the automation of the tgw routes with lambda.  For now the manual steps for adding the routes is fine considering its hopefully on the AWS roadmap to fix.
-
-https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
-
 ![Fortigate Egress Diagram 2](https://github.com/bignellrp/awscloudformation/blob/master/Fortigate-Egress2.png)
 
 From this point the commands are very similar to project 1 just calling different scripts.
@@ -222,3 +218,12 @@ Just a plain VPC with a VPN. Use vpn describe commands to grab VPN info. See app
 ```
 aws cloudformation create-stack --stack-name vpc-vpn --template-body file:///$HOME/awscloudformation/vpc-vpn.yaml  --parameters ParameterKey=myKeyPair,ParameterValue="my-key"
 ```
+
+# Project 5: VPCs connected with TGW adding routes via Lambda
+
+Inspired by a similar github project that has solved the automation of the tgw routes with lambda, this project is all about extending CF to use Lambda where commands may be unsupported.  In this case adding routes pointing at the TGW.  Hopefully this will lead on to creation of TGW VPNs with Lambda too.
+
+https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
+
+
+![VPC-Lambda](https://github.com/bignellrp/awscloudformation/blob/master/VPC-Lambda.png)

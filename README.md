@@ -257,3 +257,14 @@ ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@$vpc1instancepublic
 
 Note: The uploaded lambda package remains in s3 after the stack is deleted.  You will need to tidy this up to avoid unwanted s3 costs.
 Note: The CloudWatch logs also remain after the stack is deleted. You will need to tidy this up to avoid unwanted CloudWatch costs.
+
+# Next Steps
+
+Using the Fortinet scripts build the VPNs for two spokes that connect directly to TGW.
+
+https://github.com/fortinetsolutions/AWS-CloudFormationTemplates/tree/master/Templates/TransitVPC/5.6
+
+```
+aws s3 cp s3://fortibucket-eu-west-1/main_functionv3.zip .
+aws s3 cp s3://fortibucket-eu-west-1/56_worker_functionv3.zip .
+```

@@ -254,3 +254,6 @@ vpc1instancepublic=`aws cloudformation describe-stacks --stack-name vpc-tgw-lamb
 vpc2instanceprivate=`aws cloudformation describe-stacks --stack-name vpc-tgw-lambda --output text | awk '/Test2InstancesPrivateIp/ {print $3}'`
 ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@$vpc1instancepublic ping -c 4 $vpc2instanceprivate
 ```
+
+Note: The uploaded lambda package remains in s3 after the stack is deleted.  You will need to tidy this up to avoid unwanted s3 costs.
+Note: The CloudWatch logs also remain after the stack is deleted. You will need to tidy this up to avoid unwanted CloudWatch costs.

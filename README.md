@@ -227,3 +227,30 @@ https://github.com/MattTunny/AWS-Transit-Gateway-Demo-MultiAccount
 
 
 ![VPC-Lambda](https://github.com/bignellrp/awscloudformation/blob/master/VPC-Lambda.png)
+
+
+First you need to package up the lambda and upload to S3.  There is a handy command that does all this for you.
+
+```
+aws cloudformation package --template-file $HOME/awscloudformation/vpc-tgw-lambda.yaml --s3-bucket networktest-cloudformation --output-template-file $HOME/packaged-template.yaml
+
+Successfully packaged artifacts and wrote output template to file /home/myuser/packaged-template.yaml.
+```
+
+Now you can build the stack.
+
+```
+aws cloudformation deploy --template-file $HOME/packaged-template.yaml --stack-name vpc-tgw-lambda --capabilities CAPABILITY_IAM
+
+Waiting for changeset to be created..
+Waiting for stack create/update to complete
+Successfully created/updated stack - vpc-tgw-lambda
+```
+
+Finally you can test that spoke 1 and ping spoke 2.
+
+```
+vpc1instancepublic=`aws cloudformation describe-stacks --stack-name vpc-tgw-lambda --output text | awk '/Test1InstancesPublicIp/ {print $3}'`
+vpc2instanceprivate=`aws cloudformation describe-stacks --stack-name vpc-tgw-lambda --output text | awk '/Test2InstancesPrivateIp/ {print $3}'`
+ssh -oStrictHostKeyChecking=no -i ~/.ssh/my-key.pem ec2-user@$vpc1instancepublic ping -c 4 $vpc2instanceprivate
+```
